@@ -6278,7 +6278,7 @@ ORDER BY ID_CLIENTE;`);
                                                  p_IND_REPRO   IN     PLS_INTEGER, */
 
 
-      
+
       async paDispMuebles(dto: paDispMueblesDTO) {
             let { pIdevento, pCveejec
                   , pRelLotes
@@ -6301,15 +6301,14 @@ ORDER BY ID_CLIENTE;`);
                   .andWhere("cl.id_evento = :idEvento", { idEvento: pIdevento })
                   .andWhere("cl.lote_publico != 0")
                   .andWhere(`EXISTS (
-                          SELECT 1
-                          FROM sera.COMER_CLIENTESXEVENTO CXE
-                          
-                        )`)
+                    SELECT 1
+                    FROM sera.COMER_CLIENTESXEVENTO CXE
+                    
+                  )`)
                   .setParameters({ cveEjec: pCveejec })
                   .groupBy("cl.id_cliente")
                   .orderBy("cl.id_cliente")
                   .getRawMany();
-            console.log(cuAmountsLots.length);
 
             /**  WHERE CXE.ID_EVENTO = :idEvento
                             AND CXE.ID_CLIENTE = cl.ID_CLIENTE
@@ -6399,44 +6398,75 @@ ORDER BY ID_CLIENTE;`);
 
                         let nOrdenLotes = 0;
                         let saldoPrecioFinal, saldoAnticipo,
-                        saldoPrecioGarantia, saldoMontoLiq,
-                        saldoGarantiaAsig, noTransferente,
-                        montoPrecioGarantia, tabLotes;
-                        
+                              saldoPrecioGarantia, saldoMontoLiq,
+                              saldoGarantiaAsig, noTransferente,
+                              montoPrecioGarantia, tabLotes;
+                        let saldoLote = {
+                              idLote: 0,
+                              saldoPrecioFinal: 0,
+                              saldoAnticipo: 0,
+                              saldoPrecioGarantia: 0,
+                              saldoMontoLiq: 0,
+                              saldoGarantiaAsig: 0,
+                              saldo_garantia_asig: 0,
+                              ind_pena: '',
+                              noTransferente: 0,
+                              montoPrecioGarantia: 0,
+                              tabLotes: 0,
+                              lote: 0,
+                        }
+                        let ArrSaldolote = [];
                         let c_DIRECCION = "M"; // Borrar es con fines de prueba mientras valido de donde optener el valor
-                        
-                        for (const reMontosLotes of cuAmountsLots) {
-                              saldoPrecioFinal = reMontosLotes.preciofinal;
-                              saldoAnticipo = reMontosLotes.anticipo;
-                              saldoPrecioGarantia = reMontosLotes.c``;
-                              saldoMontoLiq = reMontosLotes.montoliq;
-                              saldoGarantiaAsig = reMontosLotes.garantiaasig;
-                              noTransferente = reMontosLotes.notransferente;
-                              montoPrecioGarantia = 0; 
-                              tabLotes = reMontosLotes.idLote;
 
-                              if (pIdevento == 4 && c_DIRECCION == 'M'){
+                        for (const reMontosLotes of cuAmountsLots) {
+
+                              saldoLote.saldoPrecioFinal = reMontosLotes.preciofinal;
+                              saldoLote.saldoAnticipo = reMontosLotes.anticipo;
+                              saldoLote.saldoPrecioGarantia = reMontosLotes.c``;
+                              saldoLote.saldoMontoLiq = reMontosLotes.montoliq;
+                              saldoLote.saldoGarantiaAsig = reMontosLotes.garantiaasig;
+                              saldoLote.noTransferente = reMontosLotes.notransferente;
+                              saldoLote.montoPrecioGarantia = 0;
+                              saldoLote.tabLotes = reMontosLotes.idLote;
+
+                              if (pIdevento == 4 && c_DIRECCION == 'M') {
                                     montoPrecioGarantia = Math.round(reMontosLotes.preciofinal * 5.2);
-                              }else{
+                              } else {
                                     montoPrecioGarantia = reMontosLotes.preciogarantia;
                               }
 
                               nOrdenLotes++;
-                              
+                              ArrSaldolote.push(saldoLote);
+
                         }
 
-                        // const cuMontosPagoRef = () => {
-                        //       nIdEvento = pIdevento;
-                        //       idCliente = reMountsVenta.idCliente, nOrdenLotes;
-                        //       let n_Monto = 0;
-                        //       let l_BAN = false;
 
-                        //       if (nOrdenLotes > 0) {
-                        //             for (const v_I of nOrdenLotes) {
-                        //                   let nTLote = tabLotes
-                        //             }
-                        //       }
-                        // }
+
+                        const query = this.eatPayefRepository.createQueryBuilder('CPR')
+                              .select(['CPR.ID_PAGO', 'CPR.REFERENCIA', 'CPR.NO_MOVIMIENTO', 'CPR.FECHA',
+                                    'COALESCE(CPR.MONTO, 0) AS MONTO', 'CPR.CVE_BANCO', 'CPR.CODIGO',
+                                    'CPR.ID_LOTE', 'CPR.TIPO', 'CPR.FECHA_REGISTRO', 'CPR.REFERENCIAORI', 'CPR.CUENTA',
+                                    '(SELECT NO_TRANSFERENTE FROM COMER_LOTES WHERE ID_LOTE = CPR.ID_LOTE) AS NO_TRANSFERENTE'])
+                              .innerJoin(EatParametersModEntity, 'MOD', 'CPR.CVE_BANCO = MOD.PARAMETRO AND MOD.DIRECCION = :direccion', { direccion: 'C' })
+                              .where(qb => {
+                                    const subQuery = qb.subQuery()
+                                          .select('ID_LOTE')
+                                          .from(EatLotsEntity, 'CL')
+                                          .where('ID_ESTATUSVTA = :estatusVta', { estatusVta: 'VEN' })
+                                          .andWhere('ID_EVENTO = :eventoId', { eventoId: pIdevento })
+                                          .andWhere('ID_CLIENTE = :clienteId', { clienteId: reMountsVenta.idCliente })
+                                          .andWhere('LOTE_PUBLICO != 0')
+                                          .getQuery();
+                                    return `CPR.ID_LOTE IN (${subQuery})`;
+                              })
+                              .andWhere('SUBSTR(CPR.REFERENCIA, 1, 1) NOT IN (:substr)', { substr: ['2', '3', '4', '7', '6'] })
+                              .andWhere('CPR.VALIDO_SISTEMA = :validoSistema', { validoSistema: 'A' })
+                              .andWhere('CPR.IDORDENINGRESO IS NULL')
+                              .orderBy('CPR.NO_MOVIMIENTO')
+                              .getMany();
+
+
+
                   }
 
             }
