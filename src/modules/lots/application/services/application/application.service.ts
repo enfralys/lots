@@ -6277,6 +6277,8 @@ ORDER BY ID_CLIENTE;`);
                                                  p_REL_CLIENTE IN     NUMBER, -- Cliente que se realiza el reproceso --
                                                  p_IND_REPRO   IN     PLS_INTEGER, */
 
+
+      
       async paDispMuebles(dto: paDispMueblesDTO) {
             let { pIdevento, pCveejec
                   , pRelLotes
@@ -6284,6 +6286,9 @@ ORDER BY ID_CLIENTE;`);
                   , pRelCliente
                   , pIndRepro } = dto
             console.log(dto);
+
+            let cuAmountsVentas;
+
             /****CURSORS */
             const cuAmountsLots = await this.eatLotsRepository.createQueryBuilder("cl")
                   .select("cl.id_cliente", "idCliente")
@@ -6356,6 +6361,9 @@ ORDER BY ID_CLIENTE;`);
                   taxIva = 16;
             }
 
+            cuAmountsVentas = await this.cuMontsVents(pIdevento, pCveejec);
+            console.log(cuAmountsVentas);
+
             const value = await this.eatEventRepository
                   .createQueryBuilder()
                   .select("UPPER(valor)", "c_CONIVA")
@@ -6368,7 +6376,7 @@ ORDER BY ID_CLIENTE;`);
             if ([1, 3].includes(pCveejec)) {
                   console.log("here", pIdevento);
                   console.log(await this.PA_DISPMUEBLES_DE1(pIdevento));
-                  for (const reMounts of cuAmountsLots) {
+                  for (const reMountsVenta of cuAmountsVentas) {
                         const result = await this.eatEventRepository
                               .query(`SELECT COALESCE(SUM(MONTO),0) AS montoTotalPago
                               FROM sera.COMER_PAGOREF, sera.COMER_PARAMETROSMOD
@@ -6376,7 +6384,7 @@ ORDER BY ID_CLIENTE;`);
                                                  FROM sera.COMER_LOTES
                                                 WHERE ID_ESTATUSVTA = 'VEN'
                                                   AND ID_EVENTO = ${pIdevento}
-                                                  AND ID_CLIENTE = ${reMounts.idCliente}
+                                                  AND ID_CLIENTE = ${reMountsVenta.idCliente}
                                                   AND LOTE_PUBLICO != 0)
                                AND SUBSTR(REFERENCIA,1,1) NOT IN ('2','3','4','7','6')
                                AND VALIDO_SISTEMA = 'A'
@@ -6387,9 +6395,48 @@ ORDER BY ID_CLIENTE;`);
 
                         const amounTotPay = result[0].montototalpago;
 
-                        const amounTotClien = reMounts.anticipo;
+                        const amounTotClien = reMountsVenta.anticipo;
 
+                        let nOrdenLotes = 0;
+                        let saldoPrecioFinal, saldoAnticipo,
+                        saldoPrecioGarantia, saldoMontoLiq,
+                        saldoGarantiaAsig, noTransferente,
+                        montoPrecioGarantia, tabLotes;
+                        
+                        let c_DIRECCION = "M"; // Borrar es con fines de prueba mientras valido de donde optener el valor
+                        
+                        for (const reMontosLotes of cuAmountsLots) {
+                              saldoPrecioFinal = reMontosLotes.preciofinal;
+                              saldoAnticipo = reMontosLotes.anticipo;
+                              saldoPrecioGarantia = reMontosLotes.c``;
+                              saldoMontoLiq = reMontosLotes.montoliq;
+                              saldoGarantiaAsig = reMontosLotes.garantiaasig;
+                              noTransferente = reMontosLotes.notransferente;
+                              montoPrecioGarantia = 0; 
+                              tabLotes = reMontosLotes.idLote;
 
+                              if (pIdevento == 4 && c_DIRECCION == 'M'){
+                                    montoPrecioGarantia = Math.round(reMontosLotes.preciofinal * 5.2);
+                              }else{
+                                    montoPrecioGarantia = reMontosLotes.preciogarantia;
+                              }
+
+                              nOrdenLotes++;
+                              
+                        }
+
+                        // const cuMontosPagoRef = () => {
+                        //       nIdEvento = pIdevento;
+                        //       idCliente = reMountsVenta.idCliente, nOrdenLotes;
+                        //       let n_Monto = 0;
+                        //       let l_BAN = false;
+
+                        //       if (nOrdenLotes > 0) {
+                        //             for (const v_I of nOrdenLotes) {
+                        //                   let nTLote = tabLotes
+                        //             }
+                        //       }
+                        // }
                   }
 
             }
