@@ -6277,13 +6277,11 @@ ORDER BY ID_CLIENTE;`);
       }
 
       /*p_ID_EVENTO   IN     COMER_REF_GARANTIAS.ID_EVENTO%TYPE,
-                                                 p_CVE_EJEC    IN     PLS_INTEGER, -- Especifica si la ejecución es por: 1 POR CLIENTE, 2 POR LOTE, 3 POR ADJUDICACIÓN DIRECTA --
-                                                 p_REL_LOTES   IN     VARCHAR2, -- Es la relación de Lotes a procesar, si * (Asterico) son todos los lotes --
-                                                 p_IND_FINAL   IN     PLS_INTEGER, -- Indica si el proceso es: 1 PARCIAL, 2 FINAL --
-                                                 p_REL_CLIENTE IN     NUMBER, -- Cliente que se realiza el reproceso --
-                                                 p_IND_REPRO   IN     PLS_INTEGER, */
-
-
+      p_CVE_EJEC    IN     PLS_INTEGER, -- Especifica si la ejecución es por: 1 POR CLIENTE, 2 POR LOTE, 3 POR ADJUDICACIÓN DIRECTA --
+      p_REL_LOTES   IN     VARCHAR2, -- Es la relación de Lotes a procesar, si * (Asterico) son todos los lotes --
+      p_IND_FINAL   IN     PLS_INTEGER, -- Indica si el proceso es: 1 PARCIAL, 2 FINAL --
+      p_REL_CLIENTE IN     NUMBER, -- Cliente que se realiza el reproceso --
+      p_IND_REPRO   IN     PLS_INTEGER, */
 
       async paDispMuebles(dto: paDispMueblesDTO) {
             let { pIdevento, pCveejec
@@ -6307,17 +6305,16 @@ ORDER BY ID_CLIENTE;`);
                   .andWhere("cl.id_evento = :idEvento", { idEvento: pIdevento })
                   .andWhere("cl.lote_publico != 0")
                   .andWhere(`EXISTS (
-                          SELECT 1
-                          FROM sera.COMER_CLIENTESXEVENTO CXE
-                          
-                        )`)
+                    SELECT 1
+                    FROM sera.COMER_CLIENTESXEVENTO CXE
+                    
+                  )`)
                   .setParameters({ cveEjec: pCveejec })
                   .groupBy("cl.id_cliente")
                   .orderBy("cl.id_cliente")
                   .getRawMany();
-            console.log(cuAmountsLots.length);
 
-            /**  WHERE CXE.ID_EVENTO = :idEvento
+            /**WHERE CXE.ID_EVENTO = :idEvento
                             AND CXE.ID_CLIENTE = cl.ID_CLIENTE
                             AND COALESCE(CXE.PROCESADO, 'N') = 'N'
                             AND COALESCE(CXE.PROCESAR, 'N') = 'S' */
@@ -6400,49 +6397,55 @@ ORDER BY ID_CLIENTE;`);
 
 
                         const amounTotPay = result[0].montototalpago;
-
                         const amounTotClien = reMountsVenta.anticipo;
-
                         let nOrdenLotes = 0;
                         let saldoPrecioFinal, saldoAnticipo,
                               saldoPrecioGarantia, saldoMontoLiq,
                               saldoGarantiaAsig, noTransferente,
                               montoPrecioGarantia, tabLotes;
-
+                        let saldoLote = {
+                              idLote: 0,
+                              saldoPrecioFinal: 0,
+                              saldoAnticipo: 0,
+                              saldoPrecioGarantia: 0,
+                              saldoMontoLiq: 0,
+                              saldoGarantiaAsig: 0,
+                              saldo_garantia_asig: 0,
+                              ind_pena: '',
+                              noTransferente: 0,
+                              montoPrecioGarantia: 0,
+                              tabLotes: 0,
+                              lote: 0,
+                        }
+                        let ArrSaldolote = [];
                         let c_DIRECCION = "M"; // Borrar es con fines de prueba mientras valido de donde optener el valor
 
                         for (const reMontosLotes of cuAmountsLots) {
-                              saldoPrecioFinal = reMontosLotes.preciofinal;
-                              saldoAnticipo = reMontosLotes.anticipo;
-                              saldoPrecioGarantia = reMontosLotes.c``;
-                              saldoMontoLiq = reMontosLotes.montoliq;
-                              saldoGarantiaAsig = reMontosLotes.garantiaasig;
-                              noTransferente = reMontosLotes.notransferente;
-                              montoPrecioGarantia = 0;
-                              tabLotes = reMontosLotes.idLote;
+
+                              saldoLote.saldoPrecioFinal = reMontosLotes.preciofinal;
+                              saldoLote.saldoAnticipo = reMontosLotes.anticipo;
+                              saldoLote.saldoPrecioGarantia = reMontosLotes.c``;
+                              saldoLote.saldoMontoLiq = reMontosLotes.montoliq;
+                              saldoLote.saldoGarantiaAsig = reMontosLotes.garantiaasig;
+                              saldoLote.noTransferente = reMontosLotes.notransferente;
+                              saldoLote.montoPrecioGarantia = 0;
+                              saldoLote.tabLotes = reMontosLotes.idLote;
 
                               if (pIdevento == 4 && c_DIRECCION == 'M') {
-                                    montoPrecioGarantia = Math.round(reMontosLotes.preciofinal * 5.2);
+                                    saldoLote.montoPrecioGarantia = Math.round(reMontosLotes.preciofinal * 5.2);
                               } else {
-                                    montoPrecioGarantia = reMontosLotes.preciogarantia;
+                                    saldoLote.montoPrecioGarantia = reMontosLotes.preciogarantia;
                               }
 
                               nOrdenLotes++;
+                              ArrSaldolote.push(saldoLote);
 
                         }
 
-                        // const cuMontosPagoRef = () => {
-                        //       nIdEvento = pIdevento;
-                        //       idCliente = reMountsVenta.idCliente, nOrdenLotes;
-                        //       let n_Monto = 0;
-                        //       let l_BAN = false;
 
-                        //       if (nOrdenLotes > 0) {
-                        //             for (const v_I of nOrdenLotes) {
-                        //                   let nTLote = tabLotes
-                        //             }
-                        //       }
-                        // }
+
+
+
                   }
 
             }
