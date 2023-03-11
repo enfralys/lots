@@ -5611,8 +5611,10 @@ ORDER BY ID_CLIENTE;`);
             let fi_FECHA_PROCESO = pi_FECHA_PROCESO;
             let ni_MONTO_CHATARRA = pi_MONTO_CHATARRA;
             let ci_RESUL = pi_RESUL;
-            await this.eatPagosRefgensRepository
-                  .query(`INSERT INTO COMER_PAGOSREFGENS (ID_PAGOREFGENS,
+
+            try {
+                  const queryString = await this.eatPagosRefgensRepository
+                        .query(`INSERT INTO COMER_PAGOSREFGENS (ID_PAGOREFGENS,
                                        ID_PAGO,
                                        ID_LOTE,
                                        MONTO,
@@ -5640,12 +5642,16 @@ ORDER BY ID_CLIENTE;`);
                                        ${ni_ID_EVENTO},
                                        ${fi_FECHA_PROCESO},
                                        ${ni_MONTO_CHATARRA})`);
-
-            let p_RESUL = 'Inserción a COMER_PAGOSREFGENS correcta.';
-
-            /*  EXCEPTION
-               WHEN OTHERS THEN
-                  p_RESUL := DBMS_UTILITY.FORMAT_ERROR_BACKTRACE;*&*/
+                  if (queryString) {
+                        return {
+                              message: ci_RESUL != "" ? ci_RESUL : 'Inserción a COMER_PAGOSREFGENS correcta.',
+                              data: queryString
+                        };
+                  }
+            } catch (error) {
+                 return error.message;
+            }
+            
       }
 
       //PA_DISPMUEBLES_DE1
@@ -6278,7 +6284,7 @@ ORDER BY ID_CLIENTE;`);
                                                  p_IND_REPRO   IN     PLS_INTEGER, */
 
 
-      
+
       async paDispMuebles(dto: paDispMueblesDTO) {
             let { pIdevento, pCveejec
                   , pRelLotes
@@ -6399,12 +6405,12 @@ ORDER BY ID_CLIENTE;`);
 
                         let nOrdenLotes = 0;
                         let saldoPrecioFinal, saldoAnticipo,
-                        saldoPrecioGarantia, saldoMontoLiq,
-                        saldoGarantiaAsig, noTransferente,
-                        montoPrecioGarantia, tabLotes;
-                        
+                              saldoPrecioGarantia, saldoMontoLiq,
+                              saldoGarantiaAsig, noTransferente,
+                              montoPrecioGarantia, tabLotes;
+
                         let c_DIRECCION = "M"; // Borrar es con fines de prueba mientras valido de donde optener el valor
-                        
+
                         for (const reMontosLotes of cuAmountsLots) {
                               saldoPrecioFinal = reMontosLotes.preciofinal;
                               saldoAnticipo = reMontosLotes.anticipo;
@@ -6412,17 +6418,17 @@ ORDER BY ID_CLIENTE;`);
                               saldoMontoLiq = reMontosLotes.montoliq;
                               saldoGarantiaAsig = reMontosLotes.garantiaasig;
                               noTransferente = reMontosLotes.notransferente;
-                              montoPrecioGarantia = 0; 
+                              montoPrecioGarantia = 0;
                               tabLotes = reMontosLotes.idLote;
 
-                              if (pIdevento == 4 && c_DIRECCION == 'M'){
+                              if (pIdevento == 4 && c_DIRECCION == 'M') {
                                     montoPrecioGarantia = Math.round(reMontosLotes.preciofinal * 5.2);
-                              }else{
+                              } else {
                                     montoPrecioGarantia = reMontosLotes.preciogarantia;
                               }
 
                               nOrdenLotes++;
-                              
+
                         }
 
                         // const cuMontosPagoRef = () => {
