@@ -6277,8 +6277,6 @@ ORDER BY ID_CLIENTE;`);
                                                  p_REL_CLIENTE IN     NUMBER, -- Cliente que se realiza el reproceso --
                                                  p_IND_REPRO   IN     PLS_INTEGER, */
 
-
-
       async paDispMuebles(dto: paDispMueblesDTO) {
             let { pIdevento, pCveejec
                   , pRelLotes
@@ -6310,7 +6308,7 @@ ORDER BY ID_CLIENTE;`);
                   .orderBy("cl.id_cliente")
                   .getRawMany();
 
-            /**  WHERE CXE.ID_EVENTO = :idEvento
+            /**WHERE CXE.ID_EVENTO = :idEvento
                             AND CXE.ID_CLIENTE = cl.ID_CLIENTE
                             AND COALESCE(CXE.PROCESADO, 'N') = 'N'
                             AND COALESCE(CXE.PROCESAR, 'N') = 'S' */
@@ -6393,9 +6391,7 @@ ORDER BY ID_CLIENTE;`);
 
 
                         const amounTotPay = result[0].montototalpago;
-
                         const amounTotClien = reMountsVenta.anticipo;
-
                         let nOrdenLotes = 0;
                         let saldoPrecioFinal, saldoAnticipo,
                               saldoPrecioGarantia, saldoMontoLiq,
@@ -6430,9 +6426,9 @@ ORDER BY ID_CLIENTE;`);
                               saldoLote.tabLotes = reMontosLotes.idLote;
 
                               if (pIdevento == 4 && c_DIRECCION == 'M') {
-                                    montoPrecioGarantia = Math.round(reMontosLotes.preciofinal * 5.2);
+                                    saldoLote.montoPrecioGarantia = Math.round(reMontosLotes.preciofinal * 5.2);
                               } else {
-                                    montoPrecioGarantia = reMontosLotes.preciogarantia;
+                                    saldoLote.montoPrecioGarantia = reMontosLotes.preciogarantia;
                               }
 
                               nOrdenLotes++;
@@ -6441,29 +6437,6 @@ ORDER BY ID_CLIENTE;`);
                         }
 
 
-
-                        const query = this.eatPayefRepository.createQueryBuilder('CPR')
-                              .select(['CPR.ID_PAGO', 'CPR.REFERENCIA', 'CPR.NO_MOVIMIENTO', 'CPR.FECHA',
-                                    'COALESCE(CPR.MONTO, 0) AS MONTO', 'CPR.CVE_BANCO', 'CPR.CODIGO',
-                                    'CPR.ID_LOTE', 'CPR.TIPO', 'CPR.FECHA_REGISTRO', 'CPR.REFERENCIAORI', 'CPR.CUENTA',
-                                    '(SELECT NO_TRANSFERENTE FROM COMER_LOTES WHERE ID_LOTE = CPR.ID_LOTE) AS NO_TRANSFERENTE'])
-                              .innerJoin(EatParametersModEntity, 'MOD', 'CPR.CVE_BANCO = MOD.PARAMETRO AND MOD.DIRECCION = :direccion', { direccion: 'C' })
-                              .where(qb => {
-                                    const subQuery = qb.subQuery()
-                                          .select('ID_LOTE')
-                                          .from(EatLotsEntity, 'CL')
-                                          .where('ID_ESTATUSVTA = :estatusVta', { estatusVta: 'VEN' })
-                                          .andWhere('ID_EVENTO = :eventoId', { eventoId: pIdevento })
-                                          .andWhere('ID_CLIENTE = :clienteId', { clienteId: reMountsVenta.idCliente })
-                                          .andWhere('LOTE_PUBLICO != 0')
-                                          .getQuery();
-                                    return `CPR.ID_LOTE IN (${subQuery})`;
-                              })
-                              .andWhere('SUBSTR(CPR.REFERENCIA, 1, 1) NOT IN (:substr)', { substr: ['2', '3', '4', '7', '6'] })
-                              .andWhere('CPR.VALIDO_SISTEMA = :validoSistema', { validoSistema: 'A' })
-                              .andWhere('CPR.IDORDENINGRESO IS NULL')
-                              .orderBy('CPR.NO_MOVIMIENTO')
-                              .getMany();
 
 
 
