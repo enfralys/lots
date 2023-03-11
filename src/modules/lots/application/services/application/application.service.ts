@@ -5470,339 +5470,163 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
 
       //CURSOR cu_MONTOS_VENTA: line 53 a 72
       async cuMontsVents(pc_ID_EVENTO: number, pc_CVE_EJEC: number) {
-            return await this.eatLotsRepository.query(`SELECT 
-                                                ID_CLIENTE, 
-                                                COALESCE(
-                                                SUM(PRECIO_FINAL), 
-                                                0
-                                                ) PRECIO_FINAL, 
-                                                DECODE(
-                                                ${pc_CVE_EJEC}, 
-                                                1, 
-                                                COALESCE(
-                                                      SUM(ANTICIPO), 
-                                                      0
-                                                ), 
-                                                COALESCE(
-                                                      SUM(PRECIO_FINAL), 
-                                                      0
-                                                )
-                                                ) ANTICIPO, 
-                                                DECODE(
-                                                ${pc_CVE_EJEC}, 
-                                                1, 
-                                                COALESCE(
-                                                      SUM(PRECIO_GARANTIA), 
-                                                      0
-                                                ), 
-                                                0
-                                                ) PRECIO_GARANTIA, 
-                                                DECODE(
-                                                ${pc_CVE_EJEC}, 
-                                                1, 
-                                                COALESCE(
-                                                      SUM(MONTO_LIQ), 
-                                                      0
-                                                ), 
-                                                COALESCE(
-                                                      SUM(PRECIO_FINAL), 
-                                                      0
-                                                )
-                                                ) MONTO_LIQ, 
-                                                DECODE(
-                                                ${pc_CVE_EJEC}, 
-                                                1, 
-                                                COALESCE(
-                                                      SUM(GARANTIA_ASIG), 
-                                                      0
-                                                ), 
-                                                0
-                                                ) GARANTIA_ASIG 
-                                                FROM 
-                                                COMER_LOTES CL 
-                                                WHERE 
-                                                ID_ESTATUSVTA = 'VEN' 
-                                                AND ID_EVENTO = ${pc_ID_EVENTO} 
-                                                AND EXISTS (
-                                                SELECT 
-                                                      1 
-                                                FROM 
-                                                      COMER_CLIENTESXEVENTO CXE 
-                                                WHERE 
-                                                      CXE.ID_EVENTO = ${pc_ID_EVENTO} 
-                                                      AND CXE.ID_CLIENTE = CL.ID_CLIENTE 
-                                                      AND COALESCE(CXE.PROCESADO, 'N') = 'N' 
-                                                      AND COALESCE(CXE.PROCESAR, 'N') = 'S'
-                                                ) 
-                                                AND LOTE_PUBLICO != 0 
-                                                GROUP BY 
-                                                ID_CLIENTE 
-                                                ORDER BY 
-                                                ID_CLIENTE;`);
+            return await this.eatLotsRepository
+                  .query(`SELECT 
+                              ID_CLIENTE, 
+                              COALESCE( SUM(PRECIO_FINAL), 0 ) PRECIO_FINAL, 
+                              DECODE( ${pc_CVE_EJEC}, 1, COALESCE( SUM(ANTICIPO), 0 ), COALESCE( SUM(PRECIO_FINAL), 0 ) ) ANTICIPO, 
+                              DECODE( ${pc_CVE_EJEC}, 1, COALESCE( SUM(PRECIO_GARANTIA), 0 ), 0 ) PRECIO_GARANTIA, 
+                              DECODE( ${pc_CVE_EJEC}, 1, COALESCE( SUM(MONTO_LIQ), 0 ), COALESCE( SUM(PRECIO_FINAL), 0 ) ) MONTO_LIQ, 
+                              DECODE( ${pc_CVE_EJEC}, 1, COALESCE( SUM(GARANTIA_ASIG), 0 ), 0 ) GARANTIA_ASIG 
+                        FROM 
+                              sera.COMER_LOTES CL 
+                        WHERE 
+                              ID_ESTATUSVTA = 'VEN' 
+                              AND ID_EVENTO = ${pc_ID_EVENTO} 
+                              AND EXISTS ( SELECT 1 FROM sera.COMER_CLIENTESXEVENTO CXE WHERE CXE.ID_EVENTO = ${pc_ID_EVENTO} AND CXE.ID_CLIENTE = CL.ID_CLIENTE AND COALESCE(CXE.PROCESADO, 'N') = 'N' AND COALESCE(CXE.PROCESAR, 'N') = 'S' ) 
+                              AND LOTE_PUBLICO != 0 
+                        GROUP BY ID_CLIENTE 
+                        ORDER BY ID_CLIENTE;`);
       }
 
       //CURSOR cu_MONTOS_LOTES: line 75 a 92
       async cuMontsLots(pc_ID_EVENTO: number, pc_ID_CLIENTE: number, pc_CVE_EJEC: number,) {
-            return await this.eatLotsRepository.query(`SELECT 
-                                                      COALESCE(PRECIO_FINAL, 0) PRECIO_FINAL, 
-                                                      DECODE(
-                                                      ${pc_CVE_EJEC}, 
-                                                      1, 
-                                                      COALESCE(ANTICIPO, 0), 
-                                                      COALESCE(PRECIO_FINAL, 0)
-                                                      ) ANTICIPO, 
-                                                      --DECODE(${pc_CVE_EJEC},1,COALESCE(COALESCE((SELECT GARANTIAESPECIAL FROM COMER_PARAMETROSXLOTE WHERE ID_LOTE = CL.ID_LOTE),PRECIO_GARANTIA),0),0) PRECIO_GARANTIA,
-                                                      DECODE(
-                                                      ${pc_CVE_EJEC}, 
-                                                      1, 
-                                                      COALESCE(PRECIO_GARANTIA, 0), 
-                                                      0
-                                                      ) PRECIO_GARANTIA, 
-                                                      DECODE(
-                                                      ${pc_CVE_EJEC}, 
-                                                      1, 
-                                                      COALESCE(MONTO_LIQ, 0), 
-                                                      COALESCE(PRECIO_FINAL, 0)
-                                                      ) MONTO_LIQ, 
-                                                      DECODE(
-                                                      ${pc_CVE_EJEC}, 
-                                                      1, 
-                                                      COALESCE(GARANTIA_ASIG, 0), 
-                                                      0
-                                                      ) GARANTIA_ASIG, 
-                                                      ID_LOTE, 
-                                                      LOTE_PUBLICO, 
-                                                      NO_TRANSFERENTE 
-                                                      FROM 
-                                                      sera.COMER_LOTES 
-                                                      WHERE 
-                                                      ID_ESTATUSVTA = 'VEN' 
-                                                      AND ID_EVENTO = ${pc_ID_EVENTO} 
-                                                      AND ID_CLIENTE = ${pc_ID_CLIENTE} 
-                                                      AND LOTE_PUBLICO != 0 
-                                                      ORDER BY 
-                                                      PRECIO_FINAL DESC;`);
+            return await this.eatLotsRepository
+                  .query(`SELECT 
+                              COALESCE(PRECIO_FINAL, 0) PRECIO_FINAL, 
+                              DECODE( ${pc_CVE_EJEC}, 1, COALESCE(ANTICIPO, 0), COALESCE(PRECIO_FINAL, 0) ) ANTICIPO, 
+                              --DECODE(${pc_CVE_EJEC},1,COALESCE(COALESCE((SELECT GARANTIAESPECIAL FROM COMER_PARAMETROSXLOTE WHERE ID_LOTE = CL.ID_LOTE),PRECIO_GARANTIA),0),0) PRECIO_GARANTIA,
+                              DECODE( ${pc_CVE_EJEC}, 1, COALESCE(PRECIO_GARANTIA, 0), 0 ) PRECIO_GARANTIA, 
+                              DECODE( ${pc_CVE_EJEC}, 1, COALESCE(MONTO_LIQ, 0), COALESCE(PRECIO_FINAL, 0) ) MONTO_LIQ, 
+                              DECODE( ${pc_CVE_EJEC}, 1, COALESCE(GARANTIA_ASIG, 0), 0 ) GARANTIA_ASIG, 
+                              ID_LOTE, 
+                              LOTE_PUBLICO, 
+                              NO_TRANSFERENTE 
+                        FROM 
+                              sera.COMER_LOTES 
+                        WHERE 
+                              ID_ESTATUSVTA = 'VEN' 
+                              AND ID_EVENTO = ${pc_ID_EVENTO} 
+                              AND ID_CLIENTE = ${pc_ID_CLIENTE} 
+                              AND LOTE_PUBLICO != 0 
+                        ORDER BY PRECIO_FINAL DESC;`);
       }
 
       //CURSOR cu_MONTOS_PAGOREF: line 94 a 111
       async cuMontsPagoRef(pc_ID_EVENTO: number, pc_ID_CLIENTE: number) {
-            return await this.eatPayefRepository.query(`SELECT 
-                                                      ID_PAGO, 
-                                                      REFERENCIA, 
-                                                      NO_MOVIMIENTO, 
-                                                      FECHA, 
-                                                      COALESCE(MONTO, 0) MONTO, 
-                                                      CVE_BANCO, 
-                                                      CODIGO, 
-                                                      ID_LOTE, 
-                                                      TIPO, 
-                                                      FECHA_REGISTRO, 
-                                                      REFERENCIAORI, 
-                                                      CUENTA, 
-                                                      (
-                                                      SELECT 
-                                                            NO_TRANSFERENTE 
-                                                      FROM 
-                                                            sera.COMER_LOTES 
-                                                      WHERE 
-                                                            ID_LOTE = CPR.ID_LOTE
-                                                      ) NO_TRANSFERENTE 
-                                                      FROM 
-                                                      sera.COMER_PAGOREF CPR, 
-                                                      sera.COMER_PARAMETROSMOD MOD 
-                                                      WHERE 
-                                                      ID_LOTE IN (
-                                                      SELECT 
-                                                            ID_LOTE 
-                                                      FROM 
-                                                            sera.COMER_LOTES 
-                                                      WHERE 
-                                                            ID_ESTATUSVTA = 'VEN' 
-                                                            AND ID_EVENTO = ${pc_ID_EVENTO}
-                                                            AND ID_CLIENTE = ${pc_ID_CLIENTE}
-                                                            AND LOTE_PUBLICO != 0
-                                                      ) 
-                                                      AND SUBSTR(REFERENCIA, 1, 1) NOT IN ('2', '3', '4', '7', '6') 
-                                                      AND VALIDO_SISTEMA = 'A' 
-                                                      AND CVE_BANCO = PARAMETRO 
-                                                      AND DIRECCION = 'C' 
-                                                      AND IDORDENINGRESO IS NULL FOR 
-                                                      UPDATE 
-                                                      OF VALIDO_SISTEMA 
-                                                      ORDER BY 
-                                                      NO_MOVIMIENTO;`);
+            return await this.eatPayefRepository
+                  .query(`SELECT 
+                              ID_PAGO, 
+                              REFERENCIA, 
+                              NO_MOVIMIENTO, 
+                              FECHA, 
+                              COALESCE(MONTO, 0) MONTO, 
+                              CVE_BANCO, 
+                              CODIGO, 
+                              ID_LOTE, 
+                              TIPO, 
+                              FECHA_REGISTRO, 
+                              REFERENCIAORI, 
+                              CUENTA, 
+                              (SELECT NO_TRANSFERENTE FROM sera.COMER_LOTES WHERE ID_LOTE = CPR.ID_LOTE ) NO_TRANSFERENTE 
+                        FROM 
+                              sera.COMER_PAGOREF CPR, 
+                              sera.COMER_PARAMETROSMOD MOD 
+                        WHERE 
+                              ID_LOTE IN ( SELECT ID_LOTE FROM sera.COMER_LOTES WHERE ID_ESTATUSVTA = 'VEN' AND ID_EVENTO = ${pc_ID_EVENTO} AND ID_CLIENTE = ${pc_ID_CLIENTE} AND LOTE_PUBLICO != 0 ) 
+                              AND SUBSTR(REFERENCIA, 1, 1) NOT IN ('2', '3', '4', '7', '6') 
+                              AND VALIDO_SISTEMA = 'A' 
+                              AND CVE_BANCO = PARAMETRO 
+                              AND DIRECCION = 'C' 
+                              AND IDORDENINGRESO IS NULL 
+                        FOR UPDATE 
+                        OF VALIDO_SISTEMA 
+                        ORDER BY NO_MOVIMIENTO;`);
       }
 
       //CURSOR cu_MONTOS_PAGOREF4: line 113 a 137
       async cuMontsPagRef4(pc_ID_LOTE: number, pc_CVE_EJEC: number) {
-            return await this.eatPagosRefgensRepository.query(`SELECT 
-                                                            ID_PAGO, 
-                                                            REFERENCIA, 
-                                                            NO_MOVIMIENTO, 
-                                                            FECHA, 
-                                                            COALESCE(MONTO, 0) MONTO, 
-                                                            CVE_BANCO, 
-                                                            CODIGO, 
-                                                            ID_LOTE, 
-                                                            TIPO, 
-                                                            FECHA_REGISTRO, 
-                                                            REFERENCIAORI, 
-                                                            CUENTA, 
-                                                            (
-                                                            SELECT 
-                                                                  NO_TRANSFERENTE 
-                                                            FROM 
-                                                                  sera.COMER_LOTES 
-                                                            WHERE 
-                                                                  ID_LOTE = CPR.ID_LOTE
-                                                            ) NO_TRANSFERENTE, 
-                                                            COALESCE(
-                                                            (
-                                                                  SELECT 
-                                                                  MONTO_PENA 
-                                                                  FROM 
-                                                                  sera.COMER_DET_LC 
-                                                                  WHERE 
-                                                                  ID_DET_LC = (
-                                                                  SELECT 
-                                                                        MAX(ID_DET_LC) 
-                                                                  FROM 
-                                                                        sera.COMER_DET_LC 
-                                                                  WHERE 
-                                                                        ID_LC IN (
-                                                                        SELECT 
-                                                                        ID_LC 
-                                                                        FROM 
-                                                                        sera.COMER_LC 
-                                                                        WHERE 
-                                                                        ID_LOTE = CPR.ID_LOTE
-                                                                        ) 
-                                                                        AND LTRIM(
-                                                                        RTRIM(LC_SAE)
-                                                                        ) || LTRIM(
-                                                                        RTRIM(LC_BANCO)
-                                                                        ) = CPR.REFERENCIA
-                                                                  )
-                                                            ), 
-                                                            0
-                                                            ) MONTO_PENA 
-                                                            FROM 
-                                                            sera.COMER_PAGOREF CPR, 
-                                                            sera.COMER_PARAMETROSMOD MOD 
-                                                            WHERE 
-                                                            ID_LOTE = ${pc_ID_LOTE} 
-                                                            AND (
-                                                            (
-                                                                  ${pc_CVE_EJEC} = 1 
-                                                                  AND SUBSTR(REFERENCIA, 1, 1) IN ('2', '3', '4', '7', '6')
-                                                            ) 
-                                                            OR (
-                                                                  ${pc_CVE_EJEC} = 2 
-                                                                  AND ID_PAGO IN (
-                                                                  SELECT 
-                                                                  ID_PAGO 
-                                                                  FROM 
-                                                                  sera.COMER_PAGOREF CP 
-                                                                  WHERE 
-                                                                  CP.ID_LOTE = ${pc_ID_LOTE} 
-                                                                  AND REFERENCIA IN (
-                                                                        SELECT 
-                                                                        REF_GSAE || REF_GBANCO 
-                                                                        FROM 
-                                                                        sera.COMER_LOTES CL, 
-                                                                        sera.COMER_REF_GARANTIAS CG 
-                                                                        WHERE 
-                                                                        CL.ID_LOTE = CG.ID_LOTE 
-                                                                        AND CL.ID_CLIENTE = CG.ID_CLIENTE 
-                                                                        AND CL.ID_LOTE = CP.ID_LOTE
-                                                                  ) 
-                                                                  UNION 
-                                                                  SELECT 
-                                                                  ID_PAGO 
-                                                                  FROM 
-                                                                  sera.COMER_PAGOREF CP 
-                                                                  WHERE 
-                                                                  ID_LOTE = ${pc_ID_LOTE} 
-                                                                  AND SUBSTR(
-                                                                        RTRIM(
-                                                                        LTRIM(REFERENCIA)
-                                                                        ), 
-                                                                        1, 
-                                                                        1
-                                                                  ) IN ('2', '3', '4', '7', '6')
-                                                                  )
-                                                            )
-                                                            ) 
-                                                            AND VALIDO_SISTEMA = 'A' 
-                                                            AND CVE_BANCO = PARAMETRO 
-                                                            AND DIRECCION = 'C' 
-                                                            AND IDORDENINGRESO IS NULL FOR 
-                                                            UPDATE 
-                                                            OF VALIDO_SISTEMA 
-                                                            ORDER BY 
-                                                            SUBSTR(REFERENCIA, 1, 1), 
-                                                            NO_MOVIMIENTO;`);
+            return await this.eatPagosRefgensRepository
+                  .query(`SELECT 
+                              ID_PAGO, 
+                              REFERENCIA, 
+                              NO_MOVIMIENTO, 
+                              FECHA, 
+                              COALESCE(MONTO, 0) MONTO, 
+                              CVE_BANCO, 
+                              CODIGO, 
+                              ID_LOTE, 
+                              TIPO, 
+                              FECHA_REGISTRO, 
+                              REFERENCIAORI, 
+                              CUENTA, 
+                              (SELECT NO_TRANSFERENTE 
+                              FROM sera.COMER_LOTES 
+                              WHERE ID_LOTE = CPR.ID_LOTE) NO_TRANSFERENTE, 
+                              COALESCE((  SELECT MONTO_PENA FROM sera.COMER_DET_LC WHERE ID_DET_LC = ( SELECT MAX(ID_DET_LC) FROM sera.COMER_DET_LC WHERE ID_LC IN (SELECT ID_LC FROM sera.COMER_LC WHERE ID_LOTE = CPR.ID_LOTE) AND LTRIM(RTRIM(LC_SAE)) || LTRIM(RTRIM(LC_BANCO)) = CPR.REFERENCIA)), 0) MONTO_PENA 
+                        FROM 
+                              sera.COMER_PAGOREF CPR, 
+                              sera.COMER_PARAMETROSMOD MOD 
+                        WHERE 
+                              ID_LOTE = ${pc_ID_LOTE} 
+                              AND ( ( ${pc_CVE_EJEC} = 1 AND SUBSTR(REFERENCIA, 1, 1) IN ('2', '3', '4', '7', '6') ) OR ( ${pc_CVE_EJEC}= 2 AND ID_PAGO IN ( SELECT ID_PAGO FROM sera.COMER_PAGOREF CP WHERE CP.ID_LOTE = ${pc_ID_LOTE} AND REFERENCIA IN ( SELECT REF_GSAE || REF_GBANCO FROM sera.COMER_LOTES CL, sera.COMER_REF_GARANTIAS CG WHERE CL.ID_LOTE = CG.ID_LOTE AND CL.ID_CLIENTE = CG.ID_CLIENTE AND CL.ID_LOTE = CP.ID_LOTE ) UNION SELECT ID_PAGO FROM sera.COMER_PAGOREF CP WHERE ID_LOTE = ${pc_ID_LOTE} AND SUBSTR( RTRIM( LTRIM(REFERENCIA)), 1, 1) IN ('2', '3', '4', '7', '6') ) ) ) 
+                              AND VALIDO_SISTEMA = 'A' 
+                              AND CVE_BANCO = PARAMETRO 
+                              AND DIRECCION = 'C' 
+                              AND IDORDENINGRESO IS NULL
+                        FOR UPDATE
+                        OF VALIDO_SISTEMA 
+                        ORDER BY SUBSTR(REFERENCIA, 1, 1), NO_MOVIMIENTO;`);
       }
 
       //CURSOR cu_PAGOSREFGENS: line 139 a 148
       async cuPagosrefgens(pc_ID_LOTE: number) {
-            return await this.eatPagosRefgensRepository.query(`SELECT 
-                                                            * 
-                                                            FROM 
-                                                            COMER_PAGOSREFGENS CP 
-                                                            WHERE 
-                                                            ID_LOTE = ${pc_ID_LOTE} 
-                                                            AND TIPO = 'N' 
-                                                            AND EXISTS (
-                                                            SELECT 
-                                                                  1 
-                                                            FROM 
-                                                                  COMER_PAGOREF 
-                                                            WHERE 
-                                                                  ID_PAGO = CP.ID_PAGO 
-                                                                  AND IDORDENINGRESO IS NULL
-                                                            ) FOR 
-                                                            UPDATE 
-                                                            OF MONTO, 
-                                                            IVA, 
-                                                            MONTO_NOAPP_IVA, 
-                                                            TIPO 
-                                                            ORDER BY 
-                                                            ID_PAGOREFGENS;`);
+            return await this.eatPagosRefgensRepository
+                  .query(`SELECT 
+                              * 
+                        FROM 
+                              sera.COMER_PAGOSREFGENS CP 
+                        WHERE 
+                              ID_LOTE = ${pc_ID_LOTE}
+                              AND TIPO = 'N' 
+                              AND EXISTS ( SELECT 1 FROM sera.COMER_PAGOREF WHERE ID_PAGO = CP.ID_PAGO AND IDORDENINGRESO IS NULL ) 
+                        FOR UPDATE 
+                        OF MONTO, IVA, MONTO_NOAPP_IVA, TIPO 
+                        ORDER BY ID_PAGOREFGENS;`);
       }
 
       //CURSOR C3: line 878 a 884
       async c3(PLOTE: number) {
-            return await this.eatPagosRefgensRepository.query(`SELECT 
-                                                            BXL.PCTSLOTE, 
-                                                            COALESCE(CAT.CVMAN, '0'), 
-                                                            BXL.NO_BIEN, 
-                                                            SUBSTR(BIE.DESCRIPCION, 1, 438), 
-                                                            BXL.PRECIO_SIN_IVA, 
-                                                            BXL.MONTO_NOAPP_IVA, 
-                                                            BXL.IVA_FINAL 
-                                                            FROM 
-                                                            sera.COMER_BIENESXLOTE BXL, 
-                                                            sera.CAT_TRANSFERENTE CAT, 
-                                                            sera.BIENES BIE 
-                                                            WHERE 
-                                                            BXL.ID_LOTE = ${PLOTE} 
-                                                            AND BIE.NO_BIEN = BXL.NO_BIEN 
-                                                            AND BXL.NO_TRANSFERENTE = CAT.NO_TRANSFERENTE 
-                                                            ORDER BY 
-                                                            BXL.NO_BIEN;`);
+            return await this.eatPagosRefgensRepository
+                  .query(`SELECT 
+                              BXL.PCTSLOTE, 
+                              COALESCE(CAT.CVMAN, '0'), 
+                              BXL.NO_BIEN, 
+                              SUBSTR(BIE.DESCRIPCION, 1, 438), 
+                              BXL.PRECIO_SIN_IVA, 
+                              BXL.MONTO_NOAPP_IVA, 
+                              BXL.IVA_FINAL 
+                        FROM 
+                              sera.COMER_BIENESXLOTE BXL, 
+                              sera.CAT_TRANSFERENTE CAT, 
+                              sera.BIENES BIE 
+                        WHERE 
+                              BXL.ID_LOTE = ${PLOTE} 
+                              AND BIE.NO_BIEN = BXL.NO_BIEN 
+                              AND BXL.NO_TRANSFERENTE = CAT.NO_TRANSFERENTE 
+                        ORDER BY BXL.NO_BIEN;`);
       }
 
       //CURSOR C4: line 886 a 891
       async c4(pc_ID_LOTE: number) {
-            return await this.eatPagosRefgensRepository.query(`SELECT 
-                                                            BXL.NO_BIEN 
-                                                            FROM 
-                                                            sera.COMER_BIENESXLOTE BXL 
-                                                            WHERE 
-                                                            BXL.ID_LOTE = ${pc_ID_LOTE} 
-                                                            ORDER BY 
-                                                            BXL.NO_BIEN;`);
+            return await this.eatPagosRefgensRepository
+                  .query(`SELECT 
+                              BXL.NO_BIEN 
+                        FROM 
+                              sera.COMER_BIENESXLOTE BXL 
+                        WHERE 
+                              BXL.ID_LOTE = ${pc_ID_LOTE} 
+                        ORDER BY BXL.NO_BIEN;`);
       }
 
       /* == BEGIN FUNCTIONS == */
@@ -5814,23 +5638,30 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
             let G_AREA;
             let G_UR;
             let G_TPOPERACION;
-            let auxi = await this.eatEventRepository.query(` SELECT ID_TPEVENTO    
-    FROM COMER_EVENTOS
-   WHERE ID_EVENTO = ${P_EVENTO}`);
+            let auxi = await this.eatEventRepository.query(`SELECT 
+                                                             ID_TPEVENTO 
+                                                            FROM 
+                                                             sera.COMER_EVENTOS 
+                                                            WHERE 
+                                                             ID_EVENTO = ${P_EVENTO}`);
             nf_ID_TPEVENTO = auxi[0].id_tpevento;
             if (auxi.length == 0) {
                   nf_ID_TPEVENTO = 1;
             }
+
             if ((nf_ID_TPEVENTO = 5)) {
                   G_NUMLOTES = 0;
             } else {
-                  let auxi = await this.eatParametersModRepository
-                        .query(` SELECT    TO_NUMBER(VALOR)            
-            FROM    COMER_PARAMETROSMOD PAR, COMER_EVENTOS EVE
-            WHERE    PAR.PARAMETRO = 'NUMLOTGARLICP'
-            AND        PAR.DIRECCION = 'C'
-            AND        EVE.ID_EVENTO = P_EVENTO
-            AND        PAR.ID_TPEVENTO = EVE.ID_TPEVENTO;`);
+                  let auxi = await this.eatParametersModRepository.query(`SELECT 
+                                                                         TO_NUMBER(VALOR) 
+                                                                        FROM 
+                                                                         sera.COMER_PARAMETROSMOD PAR, 
+                                                                         sera.COMER_EVENTOS EVE 
+                                                                        WHERE 
+                                                                         PAR.PARAMETRO = 'NUMLOTGARLICP' 
+                                                                         AND PAR.DIRECCION = 'C' 
+                                                                         AND EVE.ID_EVENTO = P_EVENTO 
+                                                                         AND PAR.ID_TPEVENTO = EVE.ID_TPEVENTO;`);
                   G_NUMLOTES = auxi[0]?.to_number;
 
                   if (auxi.length == 0) {
@@ -5895,8 +5726,7 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
             let ci_RESUL = pi_RESUL;
 
             try {
-                  const queryString = await this.eatPagosRefgensRepository
-                        .query(`INSERT INTO COMER_PAGOSREFGENS (ID_PAGOREFGENS,
+                  const queryString = await this.eatPagosRefgensRepository.query(`INSERT INTO COMER_PAGOSREFGENS (ID_PAGOREFGENS,
                                        ID_PAGO,
                                        ID_LOTE,
                                        MONTO,
