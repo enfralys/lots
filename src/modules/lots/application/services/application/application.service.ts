@@ -237,6 +237,7 @@ WHERE     CE.ID_EVENTO = CL.ID_EVENTO
                   };
             }
       }
+
       async getConsultThirdPartyLots(idEvent: number) {
             try {
                   const result = await this.eatLotsRepository
@@ -427,6 +428,7 @@ WHERE     CE.ID_EVENTO = CL.ID_EVENTO
                   };
             }
       }
+      
       async paDeleteRevPcv({
             pIdevento,
             pNoBien,
@@ -1146,6 +1148,7 @@ ORDER BY CL.ID_LOTE;`);
                   };
             }
       }
+      
       async getPaEatCleanFailure(idEvent: number) {
             try {
                   let result = null;
@@ -5459,6 +5462,7 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                   }
             }
       }
+
       //cu_MONTOS_VENTA
       async cuMontsVents(pc_ID_EVENTO: number, pc_CVE_EJEC: number) {
             await this.eatLotsRepository.query(`SELECT ID_CLIENTE,
