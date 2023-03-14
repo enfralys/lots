@@ -30,9 +30,11 @@ export class TmpLotsEatController extends BaseController<TmpLotsEatEntity> {
   constructor(private readonly service: TmpLotsEatService) {
     super();
   }
+
   getService(): BaseService<TmpLotsEatEntity> {
     return this.service;
   }
+  
   @ApiOperation({ summary: 'Paginación de todos los registros' })
   @ApiResponse({
     status: 200,
@@ -72,7 +74,7 @@ export class TmpLotsEatController extends BaseController<TmpLotsEatEntity> {
   })
   @Get(':idLot')
   async findOneRegister(@Param('idLot') idLot: number) {
-    return await this.service.findOneRegisterByIds(idLot);
+    return await this.service.findOneRegisterById(idLot);
   }
 
   @ApiOperation({ summary: 'Guardar nuevo registro' })

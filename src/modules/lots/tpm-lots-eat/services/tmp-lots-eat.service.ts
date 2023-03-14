@@ -5,7 +5,6 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CommonFilterService } from 'src/shared/service/common-filter.service';
 import { PaginateQuery } from 'nestjs-paginate';
-import { EatEventEntity } from '../../infrastructure/eat.event.entity';
 import { TmpLotsEatDto } from '../dto/tmp-lots-eat.dto';
 
 
@@ -32,7 +31,7 @@ export class TmpLotsEatService extends BaseService<TmpLotsEatEntity> {
     );
   }
 
-  async findOneRegisterByIds(
+  async findOneRegisterById(
     idLot: number,
   ): Promise<ResponseData<TmpLotsEatEntity> | any> {
     const value = await this.tmpLotsEatRepository.findOne({
