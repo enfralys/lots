@@ -6521,7 +6521,25 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                               ArrSaldolote.push(saldoLote);
 
                         }
+                        let MontsPagoRef = await this.cuMontsPagoRef(pIdevento, reMountsVenta.idCliente);
+                        console.log("array", MontsPagoRef);
+                        if(nOrdenLotes > 0){
+                              for(var i = 1; i <= nOrdenLotes; i++){
+                                    
+                                    /*SECCION DE n_TLOTE := tab_LOTES(v_I).LOTE; */
 
+                                    if(pIndFinal == 2){
+                                          await this.eatEventRepository.query(`
+                                                UPDATE sera.COMER_PAGOREF
+                                                SET VALIDO_SISTEMA = 'S'
+                                                WHERE CURRENT OF cu_MONTOS_PAGOREF
+                                          `);
+
+
+                                    }
+
+                              }
+                        }
 
 
 
