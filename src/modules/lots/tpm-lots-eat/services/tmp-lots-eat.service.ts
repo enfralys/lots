@@ -21,7 +21,7 @@ export class TmpLotsEatService extends BaseService<TmpLotsEatEntity> {
   getRepository(): Repository<TmpLotsEatEntity> {
     return this.tmpLotsEatRepository;
   }
-  
+
   async findAllRegisters(query: PaginateQuery) {
     return this.commonFilterService.paginateFilter<TmpLotsEatEntity>(
       query,
@@ -39,17 +39,17 @@ export class TmpLotsEatService extends BaseService<TmpLotsEatEntity> {
     });
     return value
       ? {
-          statusCode: HttpStatus.OK,
-          message: ['Datos obtenidos correctamente.'],
-          data: value,
-          count: 1,
-        }
+        statusCode: HttpStatus.OK,
+        message: ['Datos obtenidos correctamente.'],
+        data: value,
+        count: 1,
+      }
       : {
-          statusCode: HttpStatus.BAD_REQUEST,
-          message: ['No se encontraron registros.'],
-          data: [],
-          count: 0,
-        };
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: ['No se encontraron registros.'],
+        data: [],
+        count: 0,
+      };
   }
 
   async create(
@@ -104,14 +104,14 @@ export class TmpLotsEatService extends BaseService<TmpLotsEatEntity> {
     });
     return value
       ? this.tmpLotsEatRepository.delete({ idLot }).then(() => {
-          return {
-            statusCode: HttpStatus.OK,
-            message: ['Registro eliminado correctamente.'],
-          };
-        })
-      : {
-          statusCode: HttpStatus.BAD_REQUEST,
-          message: ['No se encontraron registros.'],
+        return {
+          statusCode: HttpStatus.OK,
+          message: ['Registro eliminado correctamente.'],
         };
+      })
+      : {
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: ['No se encontraron registros.'],
+      };
   }
 }
