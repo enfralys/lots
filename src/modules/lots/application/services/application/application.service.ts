@@ -5824,8 +5824,49 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
       }
 
       //PROCEDURE PA_DISPMUEBLES_DE2: line 377 a 413
-      async paDismueblesDe2(idEvent: number) {
+      async paDismueblesDe2(pi_RESUL: string, tab_SALDOS: any) {
+            let ni_TCANT_LOTES: number;
+            let ni_TLOTE: number;
+            let ni_CONT: number;
 
+            let ci_RESUL: string = pi_RESUL;
+            try {
+
+                  if (ni_TCANT_LOTES > 0) {
+                        ni_TCANT_LOTES = tab_SALDOS.COUNT;
+                        while (ni_TLOTE != 0) {
+                              ni_CONT = await this.eatPagosRefgensRepository
+                                    .query(`SELECT COUNT(0)
+                                    FROM COMER_PAGOSREFGENS CP
+                                    WHERE ID_LOTE = ${ni_TLOTE}
+                                    AND EXISTS (SELECT 1
+                                          FROM COMER_PAGOREF
+                                          WHERE ID_PAGO = CP.ID_PAGO
+                                          AND IDORDENINGRESO IS NULL);`);
+
+                              if (ni_CONT > 0) {
+                                    await this.eatPagosRefgensRepository
+                                          .query(`DELETE FROM sera.COMER_PAGOSREFGENS CP
+                                                WHERE ID_LOTE = ${ni_TLOTE}
+                                                AND EXISTS (SELECT 1
+                                                      FROM sera.COMER_PAGOREF
+                                                      WHERE ID_PAGO = CP.ID_PAGO
+                                                      AND IDORDENINGRESO IS NULL);`);
+                              }
+
+                              ni_TLOTE = tab_SALDOS.NEXT(ni_TLOTE);
+
+                              return {
+                                    p_RESUL: 'Borrado de COMER_PAGOSREFGENS correcta.',
+                              };
+                        }
+                  }
+
+            } catch (error) {
+                  return {
+                        p_RESUL: error.message,
+                  };
+            }
       }
 
       //PROCEDURE UTIL_DECGROUP: line 415 a 500
