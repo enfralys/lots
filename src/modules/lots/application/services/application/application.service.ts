@@ -6372,7 +6372,7 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
             console.log(dto);
 
             let cuAmountsVentas;
-
+            let cError;
             /****CURSORS */
             const cuAmountsLots = await this.eatLotsRepository.createQueryBuilder("cl")
                   .select("cl.id_cliente", "idCliente")
@@ -6521,22 +6521,63 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                               ArrSaldolote.push(saldoLote);
 
                         }
+
                         let MontsPagoRef = await this.cuMontsPagoRef(pIdevento, reMountsVenta.idCliente);
                         console.log("array", MontsPagoRef);
+
+                        let nMonto = 0; //n_MONTO
+                        let lBan = false;
+                        let nTlote = 0;
                         if(nOrdenLotes > 0){
                               for(var i = 1; i <= nOrdenLotes; i++){
-                                    
-                                    /*SECCION DE n_TLOTE := tab_LOTES(v_I).LOTE; */
+                                    nTlote = ArrSaldolote[i].tabLotes;
+                                    if(nMonto == 0){
+                                          
+                                          lBan = true;
+                                          for (const montPr of MontsPagoRef) {
+                                                if(pIndFinal == 2){
 
-                                    if(pIndFinal == 2){
-                                          await this.eatEventRepository.query(`
-                                                UPDATE sera.COMER_PAGOREF
-                                                SET VALIDO_SISTEMA = 'S'
-                                                WHERE CURRENT OF cu_MONTOS_PAGOREF
-                                          `);
+                                                      ////REVISAR ESTO ES UN CABO SUELTO
+                                                      await this.eatEventRepository.query(`
+                                                            UPDATE sera.COMER_PAGOREF
+                                                            SET VALIDO_SISTEMA = 'S'
+                                                            WHERE  OF cu_MONTOS_PAGOREF
+                                                      `);
+                                                }
+                                          }
+
+                                          lBan = false;
+                                    }
+
+                                    if(nMonto >= ArrSaldolote[nTlote].saldoAnticipo){
+                                          idPayRefGens = idPayRefGens + 1; //n_ID_PAGOREFGENS
+                                          cError = 'Pago Garantías: ';
+
+                                          if(pIdevento == 5 && value == 'N'){
+                                                for (const montPr of MontsPagoRef) {
+                                                      await this.paDismuebleIns(
+                                                            idPayRefGens, 
+                                                            montPr.ID_PAGO, 
+                                                            nTlote, 
+                                                            nMonto, 
+                                                            montPr.REFERENCIAORI, 
+                                                            null, 
+                                                            ArrSaldolote[nTlote].noTransferente, 
+                                                            0, 
+                                                            0, 
+                                                            nMonto, 
+                                                            'N', 
+                                                            pIdevento, 
+                                                            new Date(), 
+                                                            0, 
+                                                            cError
+                                                      );
+                                                }
+                                          }
 
 
                                     }
+
 
                               }
                         }
