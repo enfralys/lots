@@ -6566,6 +6566,9 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                         let MontsPagoRef = await this.cuMontsPagoRef(pIdevento, reMountsVenta.idCliente);
                         console.log("array", MontsPagoRef);
 
+
+
+                        ///Jorge Colaborador
                         let nMonto = 0; //n_MONTO
                         let lBan = false;
                         let nTlote = 0;
@@ -6614,6 +6617,8 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                                                             cError
                                                       );
                                                 }
+                                          }else{
+
                                           }
 
 
