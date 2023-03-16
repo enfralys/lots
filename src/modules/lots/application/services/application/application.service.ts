@@ -6411,9 +6411,12 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                   , pIndRepro
             } = dto
             console.log(dto);
-
+            let nTlote = 0;
             let cuAmountsVentas;
             let cError;
+            let ArrSaldolote = [];
+            let c_DIRECCION = "M"; // Borrar es con fines de prueba mientras valido de donde optener el valor
+            let n_TCANT_LOTES=0;
             /****CURSORS */
             const cuAmountsLots = await this.eatLotsRepository.createQueryBuilder("cl")
                   .select("cl.id_cliente", "idCliente")
@@ -6517,13 +6520,14 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                                AND IDORDENINGRESO IS NULL;` )
 
 
-                        const amounTotPay = result[0].montototalpago;
-                        const amounTotClien = reMountsVenta.anticipo;
+                        var amounTotPay = result[0].montototalpago;
+                        var amounTotClien = reMountsVenta.anticipo;
                         let nOrdenLotes = 0;
                         let saldoPrecioFinal, saldoAnticipo,
                               saldoPrecioGarantia, saldoMontoLiq,
                               saldoGarantiaAsig, noTransferente,
                               montoPrecioGarantia, tabLotes;
+                        
                         let saldoLote = {
                               idLote: 0,
                               saldoPrecioFinal: 0,
@@ -6538,11 +6542,11 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                               tabLotes: 0,
                               lote: 0,
                         }
-                        let ArrSaldolote = [];
-                        let c_DIRECCION = "M"; // Borrar es con fines de prueba mientras valido de donde optener el valor
+                        ArrSaldolote = [];
+                        
 
                         for (const reMontosLotes of cuAmountsLots) {
-
+                              
                               saldoLote.saldoPrecioFinal = reMontosLotes.preciofinal;
                               saldoLote.saldoAnticipo = reMontosLotes.anticipo;
                               saldoLote.saldoPrecioGarantia = reMontosLotes.c``;
@@ -6571,42 +6575,75 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                         ///Jorge Colaborador
                         let nMonto = 0; //n_MONTO
                         let lBan = false;
-                        let nTlote = 0;
-                        if(nOrdenLotes > 0){
-                              for(var i = 1; i <= nOrdenLotes; i++){
-                                    nTlote = ArrSaldolote[i].tabLotes;
-                                    if(nMonto == 0){
-                                          
-                                          lBan = true;
-                                          for (const montPr of MontsPagoRef) {
-                                                if(pIndFinal == 2){
+                        let n_ID_PAGO;
+                        let c_REFERENCIA;
+                        let n_NO_MOVIMIENTO;
+                        let f_FECHA;
+                        let c_CVE_BANCO;
+                        let n_CODIGO;
+                        let n_ID_LOTE;
+                        let c_TIPO;
+                        let f_FECHA_REGISTRO;
+                        let c_REFERENCIAORI;
+                        let c_CUENTA;
+                        let n_NO_TRANSFERENTE;
 
-                                                      ////REVISAR ESTO ES UN CABO SUELTO
+
+                        if(nOrdenLotes > 0){
+                              for(let i = 1; i <= nOrdenLotes; i++){
+                                    nTlote = ArrSaldolote[i].tabLotes;
+                                    //AQUI UN LOOP
+                                    if(nMonto == 0){
+                                          lBan = true;
+                                                n_ID_PAGO = MontsPagoRef[0].ID_PAGO;
+                                                c_REFERENCIA = MontsPagoRef[0].REFERENCIA;
+                                                n_NO_MOVIMIENTO = MontsPagoRef[0].NO_MOVIMIENTO;
+                                                f_FECHA = MontsPagoRef[0].FECHA;
+                                                nMonto = MontsPagoRef[0].MONTO;
+                                                c_CVE_BANCO = MontsPagoRef[0].CVE_BANCO;
+                                                n_CODIGO = MontsPagoRef[0].CODIGO;
+                                                n_ID_LOTE = MontsPagoRef[0].ID_LOTE;
+                                                c_TIPO = MontsPagoRef[0].TIPO;
+                                                f_FECHA_REGISTRO = MontsPagoRef[0].FECHA_REGISTRO;
+                                                c_REFERENCIAORI = MontsPagoRef[0].REFERENCIAORI;
+                                                c_CUENTA = MontsPagoRef[0].CUENTA;
+                                                n_NO_TRANSFERENTE = MontsPagoRef[0].NO_TRANSFERENTE;
+
+                                                if(pIndFinal == 2){
                                                       await this.eatEventRepository.query(`
-                                                            UPDATE sera.COMER_PAGOREF
-                                                            SET VALIDO_SISTEMA = 'S'
-                                                            WHERE  OF cu_MONTOS_PAGOREF
+                                                            UPDATE sera.COMER_PAGOREF CPR
+                                                            SET CPR.VALIDO_SISTEMA = 'S'
+                                                            WHERE CPR.id_pago = ${n_ID_PAGO}
+                                                            AND CPR.referencia = ${c_REFERENCIA}
+                                                            AND CPR.no_movimiento = ${n_NO_MOVIMIENTO}
+                                                            AND CPR.fecha = ${f_FECHA}
+                                                            AND CPR.monto = ${nMonto}
+                                                            AND CPR.cve_banco = ${c_CVE_BANCO}
+                                                            AND CPR.codigo = ${n_CODIGO}
+                                                            AND CPR.id_lote = ${n_ID_LOTE}
+                                                            AND CPR.tipo = ${c_TIPO}
+                                                            AND CPR.fecha_registro = ${f_FECHA_REGISTRO}
+                                                            AND CPR.referenciaori = ${c_REFERENCIAORI}
+                                                            AND CPR.cuenta = ${c_CUENTA}
                                                       `);
                                                 }
-                                          }
 
                                           lBan = false;
                                     }
 
-                                    if(nMonto >= ArrSaldolote[nTlote].saldoAnticipo){
+                                    if(nMonto >= ArrSaldolote[i].saldoAnticipo){
                                           idPayRefGens = idPayRefGens + 1; //n_ID_PAGOREFGENS
                                           cError = 'Pago Garantías: ';
 
                                           if(pIdevento == 5 && value == 'N'){
-                                                for (const montPr of MontsPagoRef) {
                                                       await this.paDismuebleIns(
                                                             idPayRefGens, 
-                                                            montPr.ID_PAGO, 
+                                                            MontsPagoRef[0].ID_PAGO, 
                                                             nTlote, 
                                                             nMonto, 
-                                                            montPr.REFERENCIAORI, 
+                                                            MontsPagoRef[0].REFERENCIAORI, 
                                                             null, 
-                                                            ArrSaldolote[nTlote].noTransferente, 
+                                                            ArrSaldolote[i].noTransferente, 
                                                             0, 
                                                             0, 
                                                             nMonto, 
@@ -6616,22 +6653,255 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                                                             0, 
                                                             cError
                                                       );
-                                                }
                                           }else{
-
+                                                await this.paDismuebleIns(
+                                                      idPayRefGens, 
+                                                      MontsPagoRef[0].ID_PAGO, 
+                                                      nTlote, 
+                                                      nMonto, 
+                                                      MontsPagoRef[0].REFERENCIAORI, 
+                                                      null, 
+                                                      ArrSaldolote[i].noTransferente, 
+                                                      ArrSaldolote[i].saldoAnticipo-ArrSaldolote[i].saldoAnticipo/porcIva, 
+                                                      ArrSaldolote[i].SALDO_ANTICIPO/porcIva, //ROUND 2
+                                                      0, 
+                                                      'N', 
+                                                      pIdevento, 
+                                                      new Date(), 
+                                                      0, 
+                                                      cError
+                                                );
+                                          }
+                                          nMonto = nMonto - ArrSaldolote[i].saldoAnticipo;
+                                          amounTotPay = amounTotPay - ArrSaldolote[i].saldoAnticipo;
+                                          amounTotClien = amounTotClien - ArrSaldolote[i].saldoAnticipo;
+                                          if(ArrSaldolote[i].saldoAnticipo >= ArrSaldolote[i].saldoPrecioGarantia){
+                                                ArrSaldolote[i].saldoPrecioGarantia = 0;
+                                          }else{
+                                                ArrSaldolote[i].saldoPrecioGarantia = ArrSaldolote[i].saldoPrecioGarantia - ArrSaldolote[i].saldoAnticipo;
+                                          }
+                                          ArrSaldolote[i].saldoPrecioFinal = ArrSaldolote[i].saldoPrecioFinal - ArrSaldolote[i].saldoAnticipo;
+                                          ArrSaldolote[i].saldoAnticipo = 0;
+                                          //EXIT
+                                          return;
+                                    }else{
+                                          idPayRefGens = idPayRefGens + 1;
+                                          cError = 'Pago Garantías: ';
+                                          if(pIdevento == 5 && value == 'N'){
+                                                await this.paDismuebleIns(
+                                                      idPayRefGens, 
+                                                      MontsPagoRef[0].ID_PAGO, 
+                                                      nTlote, 
+                                                      nMonto, 
+                                                      MontsPagoRef[0].REFERENCIAORI, 
+                                                      null, 
+                                                      ArrSaldolote[i].noTransferente, 
+                                                      0, 
+                                                      0, 
+                                                      nMonto, 
+                                                      'N', 
+                                                      pIdevento, 
+                                                      new Date(), 
+                                                      0, 
+                                                      cError
+                                                );
+                                          }else{
+                                                await this.paDismuebleIns(
+                                                      idPayRefGens, 
+                                                      MontsPagoRef[0].ID_PAGO, 
+                                                      nTlote, 
+                                                      nMonto, 
+                                                      MontsPagoRef[0].REFERENCIAORI, 
+                                                      null, 
+                                                      ArrSaldolote[i].noTransferente, 
+                                                      ArrSaldolote[i].saldoAnticipo-ArrSaldolote[i].saldoAnticipo/porcIva, 
+                                                      ArrSaldolote[i].saldoAnticipo/porcIva, //ROUND 2
+                                                      0, 
+                                                      'N', 
+                                                      pIdevento, 
+                                                      new Date(), 
+                                                      0, 
+                                                      cError
+                                                );
                                           }
 
-
+                                          amounTotPay = amounTotPay - nMonto;
+                                          amounTotClien = amounTotClien - nMonto;
+                                          if(nMonto >= ArrSaldolote[i].saldoPrecioGarantia){
+                                                ArrSaldolote[i].saldoPrecioGarantia = 0;
+                                          }else{
+                                                ArrSaldolote[i].saldoPrecioGarantia = ArrSaldolote[i].saldoPrecioGarantia - nMonto;
+                                          }
+                                          ArrSaldolote[i].saldoPrecioFinal = ArrSaldolote[i].saldoPrecioFinal - nMonto;
+                                          ArrSaldolote[i].saldoAnticipo = ArrSaldolote[i].saldoAnticipo - nMonto;
+                                          nMonto = 0;
                                     }
-
-
-                              }
+                                    //AQUI UN FIN LOOP
+                                    if(lBan){
+                                          //EXIT;
+                                          return;
+                                    }
+                              }///FIN DE LOOP
                         }
 
+                        if(nMonto > 0 ){
+                              idPayRefGens = idPayRefGens + 1;
+                              cError = 'Devolución Garantías (Residuo de pago): ';
 
+                              await this.paDismuebleIns(
+                                    idPayRefGens, 
+                                    MontsPagoRef[0].ID_PAGO, 
+                                    nTlote, 
+                                    nMonto, 
+                                    MontsPagoRef[0].REFERENCIAORI, 
+                                    null, 
+                                    ArrSaldolote[nTlote].noTransferente, 
+                                    0, 
+                                    0, 
+                                    nMonto, 
+                                    'D', 
+                                    pIdevento, 
+                                    new Date(), 
+                                    0, 
+                                    cError
+                              );
+                        }
+                        if(!lBan){
+                              //LOOP 
+                              n_ID_PAGO = MontsPagoRef[0].ID_PAGO;
+                              c_REFERENCIA = MontsPagoRef[0].REFERENCIA;
+                              n_NO_MOVIMIENTO = MontsPagoRef[0].NO_MOVIMIENTO;
+                              f_FECHA = MontsPagoRef[0].FECHA;
+                              nMonto = MontsPagoRef[0].MONTO;
+                              c_CVE_BANCO = MontsPagoRef[0].CVE_BANCO;
+                              n_CODIGO = MontsPagoRef[0].CODIGO;
+                              n_ID_LOTE = MontsPagoRef[0].ID_LOTE;
+                              c_TIPO = MontsPagoRef[0].TIPO;
+                              f_FECHA_REGISTRO = MontsPagoRef[0].FECHA_REGISTRO;
+                              c_REFERENCIAORI = MontsPagoRef[0].REFERENCIAORI;
+                              c_CUENTA = MontsPagoRef[0].CUENTA;
+                              n_NO_TRANSFERENTE = MontsPagoRef[0].NO_TRANSFERENTE;
 
+                              if(pIndFinal == 2){
+                                    await this.eatEventRepository.query(`
+                                          UPDATE sera.COMER_PAGOREF CPR
+                                          SET CPR.VALIDO_SISTEMA = 'S'
+                                          WHERE CPR.id_pago = ${n_ID_PAGO}
+                                          AND CPR.referencia = ${c_REFERENCIA}
+                                          AND CPR.no_movimiento = ${n_NO_MOVIMIENTO}
+                                          AND CPR.fecha = ${f_FECHA}
+                                          AND CPR.monto = ${nMonto}
+                                          AND CPR.cve_banco = ${c_CVE_BANCO}
+                                          AND CPR.codigo = ${n_CODIGO}
+                                          AND CPR.id_lote = ${n_ID_LOTE}
+                                          AND CPR.tipo = ${c_TIPO}
+                                          AND CPR.fecha_registro = ${f_FECHA_REGISTRO}
+                                          AND CPR.referenciaori = ${c_REFERENCIAORI}
+                                          AND CPR.cuenta = ${c_CUENTA}
+                                    `);
+                              }
+                              idPayRefGens = idPayRefGens + 1;
+                              cError = 'Devolución Garantías (Pagos sobrantes): ';
 
+                              await this.paDismuebleIns(
+                                    idPayRefGens, 
+                                    MontsPagoRef[0].ID_PAGO, 
+                                    nTlote, 
+                                    nMonto, 
+                                    MontsPagoRef[0].REFERENCIAORI, 
+                                    null, 
+                                    ArrSaldolote[nTlote].noTransferente, 
+                                    0, 
+                                    0, 
+                                    nMonto, 
+                                    'D', 
+                                    pIdevento, 
+                                    new Date(), 
+                                    0, 
+                                    cError
+                              );
+                              //FIN LOOP
+                        }
+                  }//Fin de ciclo loop
+
+                  let n_TLOTE;
+                  if(pIndFinal == 2){
+                        n_TCANT_LOTES = ArrSaldolote.length;
+                        if(n_TCANT_LOTES > 0){
+                              n_TLOTE = ArrSaldolote[0];//// n_TLOTE := tab_SALDOS.FIRST;
+                              for(let i=0; i<ArrSaldolote.length; i++){
+                                    if(ArrSaldolote[i].saldoPrecioGarantia == 0){
+                                          await this.eatEventRepository.query(`
+                                                UPDATE sera.COMER_LOTES
+                                                SET ID_ESTATUSVTA = 'GARA'
+                                                WHERE ID_LOTE = ${ArrSaldolote[i].tabLotes}
+                                          `);
+
+                                          await this.eatEventRepository.query(`
+                                                UPDATE sera.COMER_BIENESXLOTE
+                                                SET ESTATUS_ANT = ESTATUS_COMER,
+                                                ESTATUS_COMER = 'VPP'
+                                                WHERE ID_LOTE = ${ArrSaldolote[i].tabLotes}
+                                          `);
+
+                                          await this.eatEventRepository.query(`
+                                                UPDATE sera.BIENES
+                                                SET ESTATUS = 'VPP'
+                                                WHERE NO_BIEN IN (SELECT NO_BIEN
+                                                FROM sera.COMER_BIENESXLOTE
+                                                WHERE ID_LOTE = ${ArrSaldolote[i].tabLotes});
+                                          `);
+                                    }
+                                    //n_TLOTE = tab_SALDOS.NEXT(n_TLOTE);
+                              }
+
+                        }
                   }
+                  
+            }else{
+                  if(pRelLotes == '*'){
+                        let re_PLOTES = await this.eatEventRepository
+                        .query(`
+                              SELECT ID_LOTE,
+                                    NVL(PRECIO_FINAL,0) SALDO_PRECIO_FINAL,
+                                    NVL(ANTICIPO,0) SALDO_ANTICIPO,
+                                    --NVL(NVL((SELECT GARANTIAESPECIAL FROM COMER_PARAMETROSXLOTE WHERE ID_LOTE = CL.ID_LOTE),PRECIO_GARANTIA),0) SALDO_PRECIO_GARANTIA,
+                                    NVL(PRECIO_GARANTIA,0) SALDO_PRECIO_GARANTIA,
+                                    NVL(MONTO_LIQ,0) SALDO_MONTO_LIQ,
+                                    --NVL(NVL((SELECT GARANTIAESPECIAL FROM COMER_PARAMETROSXLOTE WHERE ID_LOTE = CL.ID_LOTE),PRECIO_GARANTIA),0) MONTO_PRECIO_GARANTIA,
+                                    NVL(PRECIO_GARANTIA,0) MONTO_PRECIO_GARANTIA,
+                                    NVL(GARANTIA_ASIG,0) SALDO_GARANTIA_ASIG,
+                                    NO_TRANSFERENTE
+                              FROM sera.COMER_LOTES CL
+                              WHERE ID_EVENTO = ${pIdevento}
+                                    AND ID_CLIENTE IS NOT NULL
+                                    AND NVL(ID_ESTATUSVTA,'VEN') = 'VEN'
+                        `);
+                        let ArrSaldolote2;
+                        
+                        for (let rePLOTES of re_PLOTES) {
+                              for (let Lote of ArrSaldolote) {
+                                    if(re_PLOTES.ID_LOTE == Lote.tabLotes){
+                                          Lote.saldoPrecioFinal = rePLOTES.SALDO_PRECIO_FINAL;
+                                          Lote.saldoAnticipo = rePLOTES.SALDO_ANTICIPO;
+                                          Lote.saldoPrecioGarantia = rePLOTES.SALDO_PRECIO_GARANTIA;
+                                          Lote.saldoMontoLiq = rePLOTES.SALDO_MONTO_LIQ;
+                                          if (pIdevento == 4 && c_DIRECCION == 'M') {
+                                                Lote.montoPrecioGarantia = rePLOTES.SALDO_PRECIO_FINAL*.5;
+                                          }else{
+                                                Lote.montoPrecioGarantia = rePLOTES.MONTO_PRECIO_GARANTIA;
+                                          }
+                                          Lote.saldoGarantiaAsig = rePLOTES.SALDO_GARANTIA_ASIG;
+                                          Lote.noTransferente = rePLOTES.NO_TRANSFERENTE;
+
+                                    }
+                                    ArrSaldolote2.push(Lote);
+                              }
+                        }
+                        //Line: 1788
+                  }
+
+
 
             }
 
