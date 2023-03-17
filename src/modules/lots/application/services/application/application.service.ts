@@ -1,6 +1,6 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { EatLotsEntity } from 'src/modules/lots/infrastructure/eat-lots.entity';
 import { EatEventEntity } from 'src/modules/lots/infrastructure/eat.event.entity';
 import { CommonFilterService } from 'src/shared/service/common-filter.service';
@@ -6417,6 +6417,23 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
             let ArrSaldolote = [];
             let c_DIRECCION = "M"; // Borrar es con fines de prueba mientras valido de donde optener el valor
             let n_TCANT_LOTES=0;
+            let n_TLOTE;
+            let nMonto = 0; //n_MONTO
+            let n_COMA;
+            let n_ID_LOTE;
+
+            let n_ID_PAGO;
+            let c_REFERENCIA;
+            let n_NO_MOVIMIENTO;
+            let f_FECHA;
+            let c_CVE_BANCO;
+            let n_CODIGO;
+            let c_TIPO;
+            let f_FECHA_REGISTRO;
+            let c_REFERENCIAORI;
+            let c_CUENTA;
+            let n_NO_TRANSFERENTE;
+            let n_SALDO_GARANT;
             /****CURSORS */
             const cuAmountsLots = await this.eatLotsRepository.createQueryBuilder("cl")
                   .select("cl.id_cliente", "idCliente")
@@ -6573,20 +6590,9 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
 
 
                         ///Jorge Colaborador
-                        let nMonto = 0; //n_MONTO
+
                         let lBan = false;
-                        let n_ID_PAGO;
-                        let c_REFERENCIA;
-                        let n_NO_MOVIMIENTO;
-                        let f_FECHA;
-                        let c_CVE_BANCO;
-                        let n_CODIGO;
-                        let n_ID_LOTE;
-                        let c_TIPO;
-                        let f_FECHA_REGISTRO;
-                        let c_REFERENCIAORI;
-                        let c_CUENTA;
-                        let n_NO_TRANSFERENTE;
+
 
 
                         if(nOrdenLotes > 0){
@@ -6824,7 +6830,7 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                         }
                   }//Fin de ciclo loop
 
-                  let n_TLOTE;
+                  
                   if(pIndFinal == 2){
                         n_TCANT_LOTES = ArrSaldolote.length;
                         if(n_TCANT_LOTES > 0){
@@ -6854,56 +6860,416 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                                     }
                                     //n_TLOTE = tab_SALDOS.NEXT(n_TLOTE);
                               }
-
                         }
                   }
                   
             }else{
                   if(pRelLotes == '*'){
-                        let re_PLOTES = await this.eatEventRepository
-                        .query(`
-                              SELECT ID_LOTE,
-                                    NVL(PRECIO_FINAL,0) SALDO_PRECIO_FINAL,
-                                    NVL(ANTICIPO,0) SALDO_ANTICIPO,
-                                    --NVL(NVL((SELECT GARANTIAESPECIAL FROM COMER_PARAMETROSXLOTE WHERE ID_LOTE = CL.ID_LOTE),PRECIO_GARANTIA),0) SALDO_PRECIO_GARANTIA,
-                                    NVL(PRECIO_GARANTIA,0) SALDO_PRECIO_GARANTIA,
-                                    NVL(MONTO_LIQ,0) SALDO_MONTO_LIQ,
-                                    --NVL(NVL((SELECT GARANTIAESPECIAL FROM COMER_PARAMETROSXLOTE WHERE ID_LOTE = CL.ID_LOTE),PRECIO_GARANTIA),0) MONTO_PRECIO_GARANTIA,
-                                    NVL(PRECIO_GARANTIA,0) MONTO_PRECIO_GARANTIA,
-                                    NVL(GARANTIA_ASIG,0) SALDO_GARANTIA_ASIG,
-                                    NO_TRANSFERENTE
-                              FROM sera.COMER_LOTES CL
-                              WHERE ID_EVENTO = ${pIdevento}
-                                    AND ID_CLIENTE IS NOT NULL
-                                    AND NVL(ID_ESTATUSVTA,'VEN') = 'VEN'
-                        `);
-                        let ArrSaldolote2;
-                        
-                        for (let rePLOTES of re_PLOTES) {
-                              for (let Lote of ArrSaldolote) {
-                                    if(re_PLOTES.ID_LOTE == Lote.tabLotes){
-                                          Lote.saldoPrecioFinal = rePLOTES.SALDO_PRECIO_FINAL;
-                                          Lote.saldoAnticipo = rePLOTES.SALDO_ANTICIPO;
-                                          Lote.saldoPrecioGarantia = rePLOTES.SALDO_PRECIO_GARANTIA;
-                                          Lote.saldoMontoLiq = rePLOTES.SALDO_MONTO_LIQ;
-                                          if (pIdevento == 4 && c_DIRECCION == 'M') {
-                                                Lote.montoPrecioGarantia = rePLOTES.SALDO_PRECIO_FINAL*.5;
-                                          }else{
-                                                Lote.montoPrecioGarantia = rePLOTES.MONTO_PRECIO_GARANTIA;
-                                          }
-                                          Lote.saldoGarantiaAsig = rePLOTES.SALDO_GARANTIA_ASIG;
-                                          Lote.noTransferente = rePLOTES.NO_TRANSFERENTE;
+                        try{
+                              let re_PLOTES = await this.eatEventRepository
+                              .query(`
+                                    SELECT ID_LOTE,
+                                          NVL(PRECIO_FINAL,0) SALDO_PRECIO_FINAL,
+                                          NVL(ANTICIPO,0) SALDO_ANTICIPO,
+                                          --NVL(NVL((SELECT GARANTIAESPECIAL FROM COMER_PARAMETROSXLOTE WHERE ID_LOTE = CL.ID_LOTE),PRECIO_GARANTIA),0) SALDO_PRECIO_GARANTIA,
+                                          NVL(PRECIO_GARANTIA,0) SALDO_PRECIO_GARANTIA,
+                                          NVL(MONTO_LIQ,0) SALDO_MONTO_LIQ,
+                                          --NVL(NVL((SELECT GARANTIAESPECIAL FROM COMER_PARAMETROSXLOTE WHERE ID_LOTE = CL.ID_LOTE),PRECIO_GARANTIA),0) MONTO_PRECIO_GARANTIA,
+                                          NVL(PRECIO_GARANTIA,0) MONTO_PRECIO_GARANTIA,
+                                          NVL(GARANTIA_ASIG,0) SALDO_GARANTIA_ASIG,
+                                          NO_TRANSFERENTE
+                                    FROM sera.COMER_LOTES CL
+                                    WHERE ID_EVENTO = ${pIdevento}
+                                          AND ID_CLIENTE IS NOT NULL
+                                          AND NVL(ID_ESTATUSVTA,'VEN') = 'VEN'
+                              `);
+                              let ArrSaldolote2;
+                              
+                              for (let rePLOTES of re_PLOTES) {
+                                    for (let Lote of ArrSaldolote) {
+                                          if(rePLOTES.ID_LOTE == Lote.tabLotes){
+                                                Lote.saldoPrecioFinal = rePLOTES.SALDO_PRECIO_FINAL;
+                                                Lote.saldoAnticipo = rePLOTES.SALDO_ANTICIPO;
+                                                Lote.saldoPrecioGarantia = rePLOTES.SALDO_PRECIO_GARANTIA;
+                                                Lote.saldoMontoLiq = rePLOTES.SALDO_MONTO_LIQ;
+                                                if (pIdevento == 4 && c_DIRECCION == 'M') {
+                                                      Lote.montoPrecioGarantia = rePLOTES.SALDO_PRECIO_FINAL*.5;
+                                                }else{
+                                                      Lote.montoPrecioGarantia = rePLOTES.MONTO_PRECIO_GARANTIA;
+                                                }
+                                                Lote.saldoGarantiaAsig = rePLOTES.SALDO_GARANTIA_ASIG;
+                                                Lote.noTransferente = rePLOTES.NO_TRANSFERENTE;
 
+                                          }
+                                          ArrSaldolote2.push(Lote);
                                     }
-                                    ArrSaldolote2.push(Lote);
                               }
+                              ArrSaldolote = ArrSaldolote2;
+                        }catch (error){
+                              cError = 'Relación de Lotes inconsistente.';
+                              //RAISE e_EXCEPPROC;
                         }
                         //Line: 1788
+                  }else{
+                        try{
+                              if(pIndFinal == 2){
+                                    await this.paDepura();
+                              }
+                              while(pRelLotes.length > 0){
+                                    n_COMA = pRelLotes.indexOf(',') + 1;
+                                    if(n_COMA = 0){
+                                          n_ID_LOTE = Number(pRelLotes.trim());
+                                          pRelLotes = null;
+                                    }else{
+                                          n_ID_LOTE = Number((pRelLotes.substring(1, n_COMA - 1)).trim());
+                                          pRelLotes = pRelLotes.substring(n_COMA + 1);
+                                    }
+                                    if(n_ID_LOTE > 0){
+                                          let respComerL = await this.eatEventRepository
+                                          .query(`
+                                                SELECT NVL(PRECIO_FINAL,0) n_SALDO_PRECIO_FINAL,
+                                                      NVL(ANTICIPO,0) n_SALDO_ANTICIPO,
+                                                      NVL(PRECIO_GARANTIA,0) n_SALDO_PRECIO_GARANTIA,
+                                                      NVL(MONTO_LIQ,0) MONTO_LIQ,
+                                                      NVL(PRECIO_GARANTIA,0) n_MONTO_PRECIO_GARANTIA,
+                                                      NVL(GARANTIA_ASIG,0) n_SALDO_GARANTIA_ASIG,
+                                                      NO_TRANSFERENTE
+                                                FROM COMER_LOTES CL
+                                                WHERE ID_ESTATUSVTA = 'VEN'
+                                                AND ID_LOTE = ${n_ID_LOTE};
+                                          `);
+
+                                          let ArrSaldolote2;
+                                          for (let rePLOTES of respComerL) {
+                                                for (let Lote of ArrSaldolote) {
+                                                      if(rePLOTES.ID_LOTE == Lote.tabLotes){
+                                                            Lote.saldoPrecioFinal = rePLOTES.n_SALDO_PRECIO_FINAL;
+                                                            Lote.saldoAnticipo = rePLOTES.n_SALDO_ANTICIPO;
+                                                            Lote.saldoPrecioGarantia = rePLOTES.n_SALDO_PRECIO_GARANTIA;
+                                                            Lote.saldoMontoLiq = rePLOTES.MONTO_LIQ;
+                                                            if (pIdevento == 4 && c_DIRECCION == 'M') {
+                                                                  Lote.montoPrecioGarantia = rePLOTES.SALDO_PRECIO_FINAL*.5;
+                                                            }else{
+                                                                  Lote.montoPrecioGarantia = rePLOTES.MONTO_PRECIO_GARANTIA;
+                                                            }
+                                                            Lote.saldoGarantiaAsig = rePLOTES.SALDO_GARANTIA_ASIG;
+                                                            Lote.noTransferente = rePLOTES.NO_TRANSFERENTE;
+                                                      }
+                                                      ArrSaldolote2.push(Lote);
+                                                }
+                                          }
+                                          ArrSaldolote = ArrSaldolote2;
+                                    }
+                              }
+                        }catch(error){
+                              cError = 'Relación de Lotes inconsistente.';
+                              //RAISE e_EXCEPPROC;
+                        }
+                  }
+                  if(pIndFinal == 1){
+                        await this.prepOIBorra(pIdevento); 
+                  }
+                  await this.paDismueblesDe2(cError, ArrSaldolote);
+            }
+            //line 1870 
+            let MontsPagRef4 = await this.cuMontsPagRef4(pIdevento, pCveejec);
+            console.log("array", MontsPagRef4);
+            n_TCANT_LOTES = ArrSaldolote.length;
+            if(n_TCANT_LOTES > 0 ){
+                  n_TLOTE = ArrSaldolote[0];
+                  for (let monts of MontsPagRef4) {
+                        nMonto = 0;
+                        let tabS = ArrSaldolote.find( res => res.tabLotes ===  n_TLOTE.tabLotes);
+                        let MONTO_PENA;
+
+                        if(monts.MONTO_PENA == null){
+                              MONTO_PENA=0;
+                        }else{
+                              MONTO_PENA=monts.MONTO_PENA;
+                        }
+
+                        if(tabS.saldoPrecioFinal > 0){
+                              
+                              nMonto = monts.MONTO - MONTO_PENA;
+
+                              if(nMonto >= tabS.saldoPrecioFinal){
+                                    idPayRefGens = idPayRefGens + 1;
+                                    cError = 'Pago tipo '||monts.REFERENCIA.substr(1,1)||': ';
+                                    if(pIdevento == 5 && value == 'N'){
+                                          await this.paDismuebleIns(
+                                                idPayRefGens, 
+                                                monts.ID_PAGO, 
+                                                n_TLOTE, 
+                                                tabS.saldoPrecioFinal, 
+                                                monts.REFERENCIAORI, 
+                                                null, 
+                                                tabS.noTransferente, 
+                                                0, 
+                                                0, 
+                                                tabS.saldoPrecioFinal, 
+                                                'N', 
+                                                pIdevento, 
+                                                new Date(), 
+                                                0, 
+                                                cError
+                                          );
+                                    }else{
+                                          await this.paDismuebleIns(
+                                                idPayRefGens, 
+                                                monts.ID_PAGO, 
+                                                n_TLOTE, 
+                                                tabS.saldoPrecioFinal, 
+                                                monts.REFERENCIAORI, 
+                                                null, 
+                                                monts.NO_TRANSFERENTE, 
+                                                tabS.saldoPrecioFinal-(tabS.saldoPrecioFinal/porcIva),
+                                                tabS.saldoPrecioFinal/porcIva,
+                                                0, 
+                                                'N', 
+                                                pIdevento, 
+                                                new Date(), 
+                                                0, 
+                                                cError
+                                          );
+                                    }
+                                    nMonto = nMonto - tabS.saldoPrecioFinal;
+                                    tabS.saldoPrecioFinal = 0;
+                                    if(nMonto > 0){
+                                          idPayRefGens = idPayRefGens + 1;
+                                          cError = 'Devolución Tipo '||monts.REFERENCIA.substr(1,1)||' (Residuo de pago): ';
+                                          await this.paDismuebleIns(
+                                                idPayRefGens, 
+                                                monts.ID_PAGO, 
+                                                n_TLOTE, 
+                                                nMonto, 
+                                                monts.REFERENCIAORI, 
+                                                null, 
+                                                tabS.noTransferente, 
+                                                0, 
+                                                0, 
+                                                nMonto, 
+                                                'D', 
+                                                pIdevento, 
+                                                new Date(), 
+                                                0, 
+                                                cError
+                                          );
+                                    }
+                              }else{
+                                    idPayRefGens = idPayRefGens + 1;
+                                    cError = 'Pago TIPO '||monts.REFERENCIA.substr(1,1)||': ';
+                                    if(pIdevento == 5 && value == 'N'){
+                                          await this.paDismuebleIns(
+                                                idPayRefGens, 
+                                                monts.ID_PAGO, 
+                                                n_TLOTE, 
+                                                nMonto, 
+                                                monts.REFERENCIAORI, 
+                                                null, 
+                                                monts.NO_TRANSFERENTE, 
+                                                0, 
+                                                0, 
+                                                nMonto, 
+                                                'N', 
+                                                pIdevento, 
+                                                new Date(), 
+                                                0, 
+                                                cError
+                                          );
+
+                                    }else{
+                                          await this.paDismuebleIns(
+                                                idPayRefGens, 
+                                                monts.ID_PAGO, 
+                                                n_TLOTE, 
+                                                nMonto, 
+                                                monts.REFERENCIAORI, 
+                                                null, 
+                                                monts.NO_TRANSFERENTE, 
+                                                nMonto-(nMonto/porcIva),
+                                                nMonto/porcIva,
+                                                0, 
+                                                'N', 
+                                                pIdevento, 
+                                                new Date(), 
+                                                0, 
+                                                cError
+                                          );
+                                    }
+                                    tabS.saldoPrecioFinal = tabS.saldoPrecioFinal - nMonto;
+                              }
+
+                              if(MONTO_PENA > 0){
+                                    tabS.ind_pena = 'S';
+                                    idPayRefGens = idPayRefGens + 1;
+                                    cError = 'Pago de penalización tipo '||monts.REFERENCIA.substr(1,1)||': ';
+                                    await this.paDismuebleIns(
+                                          idPayRefGens, 
+                                          monts.ID_PAGO, 
+                                          n_TLOTE, 
+                                          monts.MONTO_PENA, 
+                                          monts.REFERENCIAORI, 
+                                          null, 
+                                          monts.NO_TRANSFERENTE, 
+                                          monts.MONTO_PENA-monts.MONTO_PENA/porcIva,
+                                          monts.MONTO_PENA/porcIva,
+                                          0, 
+                                          'P', 
+                                          pIdevento, 
+                                          new Date(), 
+                                          0, 
+                                          cError
+                                    );
+                              }
+                        }else{
+                              nMonto = monts.MONTO - MONTO_PENA; //line 2005
+
+                              if(nMonto > 0){
+                                    idPayRefGens = idPayRefGens + 1;
+                                    cError = 'Devolución TIPO '||monts.REFERENCIA.substr(1,1)||' (Pagos sobrantes): ';
+
+                                    await this.paDismuebleIns(
+                                          idPayRefGens, 
+                                          monts.ID_PAGO, 
+                                          n_TLOTE, 
+                                          nMonto, 
+                                          monts.REFERENCIAORI, 
+                                          null, 
+                                          monts.NO_TRANSFERENTE, 
+                                          0, 
+                                          0, 
+                                          nMonto, 
+                                          'D', 
+                                          pIdevento, 
+                                          new Date(), 
+                                          0, 
+                                          cError
+                                    );
+                              }
+                              if(MONTO_PENA > 0){
+                                    tabS.ind_pena = 'S';
+                                    idPayRefGens = idPayRefGens + 1;
+                                    cError = 'Pago de penalización tipo '||monts.REFERENCIA.substr(1,1)||': ';
+
+                                    await this.paDismuebleIns(
+                                          idPayRefGens, 
+                                          monts.ID_PAGO, 
+                                          n_TLOTE, 
+                                          monts.MONTO_PENA,
+                                          monts.REFERENCIAORI, 
+                                          null, 
+                                          monts.NO_TRANSFERENTE, 
+                                          monts.MONTO_PENA-monts.MONTO_PENA/porcIva,
+                                          monts.MONTO_PENA/porcIva,
+                                          0, 
+                                          'P', 
+                                          pIdevento, 
+                                          new Date(), 
+                                          0, 
+                                          cError
+                                    );
+                              }
+                        }
+
+                        if(pIndFinal == 2){
+                              await this.eatEventRepository.query(`
+                                    UPDATE sera.COMER_PAGOREF CPR
+                                    SET CPR.VALIDO_SISTEMA = 'S'
+                                    WHERE CPR.id_pago = ${n_ID_PAGO}
+                                    AND CPR.referencia = ${c_REFERENCIA}
+                                    AND CPR.no_movimiento = ${n_NO_MOVIMIENTO}
+                                    AND CPR.fecha = ${f_FECHA}
+                                    AND CPR.monto = ${nMonto}
+                                    AND CPR.cve_banco = ${c_CVE_BANCO}
+                                    AND CPR.codigo = ${n_CODIGO}
+                                    AND CPR.id_lote = ${n_ID_LOTE}
+                                    AND CPR.tipo = ${c_TIPO}
+                                    AND CPR.fecha_registro = ${f_FECHA_REGISTRO}
+                                    AND CPR.referenciaori = ${c_REFERENCIAORI}
+                                    AND CPR.cuenta = ${c_CUENTA}
+                              `);
+                        }
+                        //n_TLOTE := tab_SALDOS.NEXT(n_TLOTE);
+                  }
+            }
+
+            n_TCANT_LOTES = ArrSaldolote.length; //Line: 2063
+
+            if (n_TCANT_LOTES > 0){
+                  n_TLOTE = ArrSaldolote[0];
+                  for (let arrSaldos of ArrSaldolote) {
+                        if(arrSaldos.saldoPrecioFinal == 0){
+                              if(pIndFinal == 2){
+                                    if(arrSaldos.ind_pena == 'S'){
+                                          await this.eatEventRepository
+                                          .query(`
+                                                UPDATE COMER_LOTES
+                                                SET ID_ESTATUSVTA = 'PAGE'
+                                                WHERE ID_LOTE = ${arrSaldos.tabLotes};
+                                          `);
+                                    }else{
+                                          await this.eatEventRepository
+                                          .query(`
+                                                UPDATE COMER_LOTES
+                                                SET ID_ESTATUSVTA = 'PAG'
+                                                WHERE ID_LOTE = ${arrSaldos.tabLotes};
+                                          `);
+                                    }
+                                    await this.eatEventRepository
+                                    .query(`
+                                          UPDATE COMER_BIENESXLOTE
+                                          SET ESTATUS_ANT = ESTATUS_COMER,
+                                          ESTATUS_COMER = 'VPT'
+                                          WHERE ID_LOTE = ${arrSaldos.tabLotes};
+                                    `);
+
+                                    await this.eatEventRepository
+                                    .query(`
+                                          UPDATE BIENES
+                                                SET ESTATUS = 'VPT'
+                                          WHERE NO_BIEN IN (SELECT NO_BIEN
+                                                                  FROM COMER_BIENESXLOTE
+                                                            WHERE ID_LOTE = ${arrSaldos.tabLotes});
+                                    `);                                    
+                                    
+                              }
+                        }else{
+                              n_SALDO_GARANT = arrSaldos.montoPrecioGarantia;//line: 2091
+                              let cuPagosrefgens = await this.cuPagosrefgens(arrSaldos.tabLotes);
+                              for (const cuPagos of cuPagosrefgens) {
+                                    if(n_SALDO_GARANT == 0){
+                                          await this.eatEventRepository
+                                          .query(`
+                                                UPDATE COMER_PAGOSREFGENS
+                                                SET TIPO = 'D',
+                                                      MONTO_NOAPP_IVA = MONTO, 
+                                                      IVA = 0, 
+                                                      MONTO_APP_IVA =0 
+                                                WHERE CURRENT OF cu_PAGOSREFGENS;
+                                          `);
+                                    }else if(cuPagos.MONTO <= n_SALDO_GARANT){
+
+                                    }
+                                 
+                              }
+
+
+                        }
+
+//                        let tabS = ArrSaldolote.find( res => res.tabLotes ===  n_TLOTE.tabLotes);
+
+
+
+                        
+
                   }
 
 
-
             }
+
+
+
+
 
       }
 
