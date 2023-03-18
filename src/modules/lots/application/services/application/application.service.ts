@@ -120,9 +120,13 @@ export class ApplicationService {
             private readonly clienteProxyAppraise: ClientProxy,
             @Inject('ms-sb-0001-captureline')
             private readonly clineteProxyCaptureline: ClientProxy,
+            @Inject('ms-sb-0001-realstate')
+            private readonly clienteProxyRealState: ClientProxy,
       ) {
             this.clienteProxyAppraise.connect();
             this.clineteProxyCaptureline.connect();
+            this.clienteProxyRealState.connect();
+
       }
 
       async getSummary(in_idEvent: number) {
@@ -4214,6 +4218,15 @@ ORDER BY LOTE_PUBLICO;`);
                         }
                         //PK_PROCS_INMUEBLES.P_ASIGNA_IMPORTES (PEVENTO,null,
                         //                                  c_RESUL);
+                        await lastValueFrom(
+                              this.clienteProxyRealState.send(
+                                    { cmd: 'assingAmount' },
+                                    {
+                                          event: PEVENTO,
+                                          pro: PDIREC
+                                    },
+                              ),
+                        );
 
                         n_ID_LOTE = -1;
                         for (const DAT of await this.eatLotsRepository
@@ -5470,23 +5483,55 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
 
       //CURSOR cu_MONTOS_VENTA: line 53 a 72
       async cuMontsVents(pc_ID_EVENTO: number, pc_CVE_EJEC: number) {
-            return await this.eatLotsRepository
-                  .query(`SELECT 
-                              ID_CLIENTE, 
-                              COALESCE( SUM(PRECIO_FINAL), 0 ) PRECIO_FINAL, 
-                              DECODE( ${pc_CVE_EJEC}, 1, COALESCE( SUM(ANTICIPO), 0 ), COALESCE( SUM(PRECIO_FINAL), 0 ) ) ANTICIPO, 
-                              DECODE( ${pc_CVE_EJEC}, 1, COALESCE( SUM(PRECIO_GARANTIA), 0 ), 0 ) PRECIO_GARANTIA, 
-                              DECODE( ${pc_CVE_EJEC}, 1, COALESCE( SUM(MONTO_LIQ), 0 ), COALESCE( SUM(PRECIO_FINAL), 0 ) ) MONTO_LIQ, 
-                              DECODE( ${pc_CVE_EJEC}, 1, COALESCE( SUM(GARANTIA_ASIG), 0 ), 0 ) GARANTIA_ASIG 
-                        FROM 
-                              sera.COMER_LOTES CL 
-                        WHERE 
-                              ID_ESTATUSVTA = 'VEN' 
-                              AND ID_EVENTO = ${pc_ID_EVENTO} 
-                              AND EXISTS ( SELECT 1 FROM sera.COMER_CLIENTESXEVENTO CXE WHERE CXE.ID_EVENTO = ${pc_ID_EVENTO} AND CXE.ID_CLIENTE = CL.ID_CLIENTE AND COALESCE(CXE.PROCESADO, 'N') = 'N' AND COALESCE(CXE.PROCESAR, 'N') = 'S' ) 
-                              AND LOTE_PUBLICO != 0 
-                        GROUP BY ID_CLIENTE 
-                        ORDER BY ID_CLIENTE;`);
+             return await this.eatLotsRepository
+                   .query(`
+                        SELECT  
+                              ID_CLIENTE,  
+                              COALESCE( SUM(PRECIO_FINAL), 0 ) PRECIO_FINAL,  
+                              CASE  
+                              WHEN ${pc_CVE_EJEC} = 1 THEN COALESCE( SUM(ANTICIPO), 0 ) 
+                              ELSE COALESCE( SUM(PRECIO_FINAL), 0 ) 
+                              END AS ANTICIPO,  
+                              CASE  
+                              WHEN ${pc_CVE_EJEC} = 1 THEN COALESCE( SUM(PRECIO_GARANTIA), 0 ) 
+                              ELSE 0 
+                              END AS PRECIO_GARANTIA,  
+                              CASE  
+                              WHEN ${pc_CVE_EJEC} = 1 THEN COALESCE( SUM(MONTO_LIQ), 0 ) 
+                              ELSE COALESCE( SUM(PRECIO_FINAL), 0 ) 
+                              END AS MONTO_LIQ,  
+                              CASE  
+                              WHEN ${pc_CVE_EJEC} = 1 THEN COALESCE( SUM(GARANTIA_ASIG), 0 ) 
+                              ELSE 0 
+                              END AS GARANTIA_ASIG  
+                        FROM  
+                              sera.COMER_LOTES CL  
+                        WHERE  
+                              ID_ESTATUSVTA = 'VEN'  
+                              AND ID_EVENTO = ${pc_ID_EVENTO}  
+                              AND EXISTS ( SELECT 1 FROM sera.COMER_CLIENTESXEVENTO CXE WHERE CXE.ID_EVENTO = ${pc_ID_EVENTO} AND CXE.ID_CLIENTE = CL.ID_CLIENTE AND COALESCE(CXE.PROCESADO, 'N') = 'N' AND COALESCE(CXE.PROCESAR, 'N') = 'S' )  
+                              AND LOTE_PUBLICO != 0  
+                        GROUP BY ID_CLIENTE  
+                        ORDER BY ID_CLIENTE;
+                   `)
+            
+            // return await this.eatLotsRepository
+            //       .query(`SELECT 
+            //                   ID_CLIENTE, 
+            //                   COALESCE( SUM(PRECIO_FINAL), 0 ) PRECIO_FINAL, 
+            //                   DECODE( ${pc_CVE_EJEC}, 1, COALESCE( SUM(ANTICIPO), 0 ), COALESCE( SUM(PRECIO_FINAL), 0 ) ) ANTICIPO, 
+            //                   DECODE( ${pc_CVE_EJEC}, 1, COALESCE( SUM(PRECIO_GARANTIA), 0 ), 0 ) PRECIO_GARANTIA, 
+            //                   DECODE( ${pc_CVE_EJEC}, 1, COALESCE( SUM(MONTO_LIQ), 0 ), COALESCE( SUM(PRECIO_FINAL), 0 ) ) MONTO_LIQ, 
+            //                   DECODE( ${pc_CVE_EJEC}, 1, COALESCE( SUM(GARANTIA_ASIG), 0 ), 0 ) GARANTIA_ASIG 
+            //             FROM 
+            //                   sera.COMER_LOTES CL 
+            //             WHERE 
+            //                   ID_ESTATUSVTA = 'VEN' 
+            //                   AND ID_EVENTO = ${pc_ID_EVENTO} 
+            //                   AND EXISTS ( SELECT 1 FROM sera.COMER_CLIENTESXEVENTO CXE WHERE CXE.ID_EVENTO = ${pc_ID_EVENTO} AND CXE.ID_CLIENTE = CL.ID_CLIENTE AND COALESCE(CXE.PROCESADO, 'N') = 'N' AND COALESCE(CXE.PROCESAR, 'N') = 'S' ) 
+            //                   AND LOTE_PUBLICO != 0 
+            //             GROUP BY ID_CLIENTE 
+            //             ORDER BY ID_CLIENTE;`);
       }
 
       //CURSOR cu_MONTOS_LOTES: line 75 a 92
@@ -5573,10 +5618,7 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                               AND VALIDO_SISTEMA = 'A' 
                               AND CVE_BANCO = PARAMETRO 
                               AND DIRECCION = 'C' 
-                              AND IDORDENINGRESO IS NULL
-                        FOR UPDATE
-                        OF VALIDO_SISTEMA 
-                        ORDER BY SUBSTR(REFERENCIA, 1, 1), NO_MOVIMIENTO;`);
+                              AND IDORDENINGRESO IS NULL`);
       }
 
       //CURSOR cu_PAGOSREFGENS: line 139 a 148
@@ -5972,7 +6014,7 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                      FROM COMER_LOTES LOT
                     WHERE BXL.ID_LOTE = LOT.ID_LOTE
                       AND EXISTS (SELECT 1
-                                    FROM COMER_CLIENTESXEVENTO CXE
+                                    FROM SERA.COMER_CLIENTESXEVENTO CXE
                                    WHERE CXE.ID_EVENTO = PEVENTO
                                      AND CXE.ID_CLIENTE = LOT.ID_CLIENTE
                                      AND COALESCE(CXE.PROCESADO,'N') = 'S'
@@ -5990,7 +6032,7 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                                WHERE BXL.ID_LOTE = LOT.ID_LOTE
                                  AND ROWNUM = 1)
      WHERE EXISTS (SELECT 1
-                     FROM COMER_CLIENTESXEVENTO CXE
+                     FROM SERA.COMER_CLIENTESXEVENTO CXE
                     WHERE CXE.ID_EVENTO = PEVENTO
                       AND CXE.ID_CLIENTE = LOT.ID_CLIENTE
                       AND COALESCE(CXE.PROCESADO,'N') = 'S'
@@ -6421,7 +6463,7 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
             let nMonto = 0; //n_MONTO
             let n_COMA;
             let n_ID_LOTE;
-
+            let p_MSG_PROCESO;
             let n_ID_PAGO;
             let c_REFERENCIA;
             let n_NO_MOVIMIENTO;
@@ -6434,7 +6476,9 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
             let c_CUENTA;
             let n_NO_TRANSFERENTE;
             let n_SALDO_GARANT;
+            let n_MONTO_DIF;
             /****CURSORS */
+            
             const cuAmountsLots = await this.eatLotsRepository.createQueryBuilder("cl")
                   .select("cl.id_cliente", "idCliente")
                   .addSelect("COALESCE(SUM(cl.precio_final), 0)", "precioFinal")
@@ -6834,7 +6878,7 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                   if(pIndFinal == 2){
                         n_TCANT_LOTES = ArrSaldolote.length;
                         if(n_TCANT_LOTES > 0){
-                              n_TLOTE = ArrSaldolote[0];//// n_TLOTE := tab_SALDOS.FIRST;
+                              n_TLOTE = ArrSaldolote[0].tabLotes;//// n_TLOTE := tab_SALDOS.FIRST;
                               for(let i=0; i<ArrSaldolote.length; i++){
                                     if(ArrSaldolote[i].saldoPrecioGarantia == 0){
                                           await this.eatEventRepository.query(`
@@ -6869,19 +6913,19 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                               let re_PLOTES = await this.eatEventRepository
                               .query(`
                                     SELECT ID_LOTE,
-                                          NVL(PRECIO_FINAL,0) SALDO_PRECIO_FINAL,
-                                          NVL(ANTICIPO,0) SALDO_ANTICIPO,
-                                          --NVL(NVL((SELECT GARANTIAESPECIAL FROM COMER_PARAMETROSXLOTE WHERE ID_LOTE = CL.ID_LOTE),PRECIO_GARANTIA),0) SALDO_PRECIO_GARANTIA,
-                                          NVL(PRECIO_GARANTIA,0) SALDO_PRECIO_GARANTIA,
-                                          NVL(MONTO_LIQ,0) SALDO_MONTO_LIQ,
-                                          --NVL(NVL((SELECT GARANTIAESPECIAL FROM COMER_PARAMETROSXLOTE WHERE ID_LOTE = CL.ID_LOTE),PRECIO_GARANTIA),0) MONTO_PRECIO_GARANTIA,
-                                          NVL(PRECIO_GARANTIA,0) MONTO_PRECIO_GARANTIA,
-                                          NVL(GARANTIA_ASIG,0) SALDO_GARANTIA_ASIG,
+                                          COALESCE(PRECIO_FINAL,0) SALDO_PRECIO_FINAL,
+                                          COALESCE(ANTICIPO,0) SALDO_ANTICIPO,
+                                          --COALESCE(COALESCE((SELECT GARANTIAESPECIAL FROM COMER_PARAMETROSXLOTE WHERE ID_LOTE = CL.ID_LOTE),PRECIO_GARANTIA),0) SALDO_PRECIO_GARANTIA,
+                                          COALESCE(PRECIO_GARANTIA,0) SALDO_PRECIO_GARANTIA,
+                                          COALESCE(MONTO_LIQ,0) SALDO_MONTO_LIQ,
+                                          --COALESCE(COALESCE((SELECT GARANTIAESPECIAL FROM COMER_PARAMETROSXLOTE WHERE ID_LOTE = CL.ID_LOTE),PRECIO_GARANTIA),0) MONTO_PRECIO_GARANTIA,
+                                          COALESCE(PRECIO_GARANTIA,0) MONTO_PRECIO_GARANTIA,
+                                          COALESCE(GARANTIA_ASIG,0) SALDO_GARANTIA_ASIG,
                                           NO_TRANSFERENTE
                                     FROM sera.COMER_LOTES CL
                                     WHERE ID_EVENTO = ${pIdevento}
                                           AND ID_CLIENTE IS NOT NULL
-                                          AND NVL(ID_ESTATUSVTA,'VEN') = 'VEN'
+                                          AND COALESCE(ID_ESTATUSVTA,'VEN') = 'VEN'
                               `);
                               let ArrSaldolote2;
                               
@@ -6927,12 +6971,12 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                                     if(n_ID_LOTE > 0){
                                           let respComerL = await this.eatEventRepository
                                           .query(`
-                                                SELECT NVL(PRECIO_FINAL,0) n_SALDO_PRECIO_FINAL,
-                                                      NVL(ANTICIPO,0) n_SALDO_ANTICIPO,
-                                                      NVL(PRECIO_GARANTIA,0) n_SALDO_PRECIO_GARANTIA,
-                                                      NVL(MONTO_LIQ,0) MONTO_LIQ,
-                                                      NVL(PRECIO_GARANTIA,0) n_MONTO_PRECIO_GARANTIA,
-                                                      NVL(GARANTIA_ASIG,0) n_SALDO_GARANTIA_ASIG,
+                                                SELECT COALESCE(PRECIO_FINAL,0) n_SALDO_PRECIO_FINAL,
+                                                      COALESCE(ANTICIPO,0) n_SALDO_ANTICIPO,
+                                                      COALESCE(PRECIO_GARANTIA,0) n_SALDO_PRECIO_GARANTIA,
+                                                      COALESCE(MONTO_LIQ,0) MONTO_LIQ,
+                                                      COALESCE(PRECIO_GARANTIA,0) n_MONTO_PRECIO_GARANTIA,
+                                                      COALESCE(GARANTIA_ASIG,0) n_SALDO_GARANTIA_ASIG,
                                                       NO_TRANSFERENTE
                                                 FROM COMER_LOTES CL
                                                 WHERE ID_ESTATUSVTA = 'VEN'
@@ -6973,10 +7017,10 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
             }
             //line 1870 
             let MontsPagRef4 = await this.cuMontsPagRef4(pIdevento, pCveejec);
-            console.log("array", MontsPagRef4);
+            console.log("--array--", MontsPagRef4);
             n_TCANT_LOTES = ArrSaldolote.length;
             if(n_TCANT_LOTES > 0 ){
-                  n_TLOTE = ArrSaldolote[0];
+                  n_TLOTE = ArrSaldolote[0].tabLotes;
                   for (let monts of MontsPagRef4) {
                         nMonto = 0;
                         let tabS = ArrSaldolote.find( res => res.tabLotes ===  n_TLOTE.tabLotes);
@@ -7196,7 +7240,7 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
             n_TCANT_LOTES = ArrSaldolote.length; //Line: 2063
 
             if (n_TCANT_LOTES > 0){
-                  n_TLOTE = ArrSaldolote[0];
+                  n_TLOTE = ArrSaldolote[0].tabLotes;
                   for (let arrSaldos of ArrSaldolote) {
                         if(arrSaldos.saldoPrecioFinal == 0){
                               if(pIndFinal == 2){
@@ -7245,32 +7289,181 @@ AND CDL.TIPO_REF IN (${c_TIPOS_LC_GARA} ))
                                                       MONTO_NOAPP_IVA = MONTO, 
                                                       IVA = 0, 
                                                       MONTO_APP_IVA =0 
-                                                WHERE CURRENT OF cu_PAGOSREFGENS;
+                                                WHERE 
+                                                      id_pagorefgens=${cuPagos.id_pagorefgens} AND
+                                                      id_pago=${cuPagos.id_pago} AND
+                                                      id_lote=${cuPagos.id_lote} AND
+                                                      id_evento=${cuPagos.id_evento} AND
+                                                      id_evento=${cuPagos.id_evento};
                                           `);
-                                    }else if(cuPagos.MONTO <= n_SALDO_GARANT){
+                                    }else if(cuPagos.monto <= n_SALDO_GARANT){
 
+                                          await this.eatEventRepository
+                                          .query(`
+                                                UPDATE COMER_PAGOSREFGENS
+                                                      SET TIPO = 'P'
+                                                WHERE 
+                                                      id_pagorefgens=${cuPagos.id_pagorefgens} AND
+                                                      id_pago=${cuPagos.id_pago} AND
+                                                      id_lote=${cuPagos.id_lote} AND
+                                                      id_evento=${cuPagos.id_evento} AND
+                                                      id_evento=${cuPagos.id_evento};
+                                          `);
+
+                                          n_SALDO_GARANT = n_SALDO_GARANT - cuPagos.monto;
+                                    }else{
+                                          n_MONTO_DIF = cuPagos.monto - n_SALDO_GARANT;
+
+                                          await this.eatEventRepository
+                                          .query(`
+                                                UPDATE COMER_PAGOSREFGENS
+                                                SET TIPO = 'P',
+                                                      MONTO = ${n_SALDO_GARANT},
+                                                      IVA = ${n_SALDO_GARANT}-ROUND(${n_SALDO_GARANT}/${porcIva},2),
+                                                      MONTO_APP_IVA = ROUND(${n_SALDO_GARANT}/${porcIva},2)
+                                                WHERE 
+                                                      id_pagorefgens=${cuPagos.id_pagorefgens} AND
+                                                      id_pago=${cuPagos.id_pago} AND
+                                                      id_lote=${cuPagos.id_lote} AND
+                                                      id_evento=${cuPagos.id_evento} AND
+                                                      id_evento=${cuPagos.id_evento};
+                                          `);
+
+                                          idPayRefGens = idPayRefGens + 1;
+                                          cError = 'Penalización por adeudo : ';
+
+                                          await this.paDismuebleIns(
+                                                idPayRefGens, 
+                                                cuPagos.ID_PAGO, 
+                                                cuPagos.ID_LOTE,
+                                                n_MONTO_DIF, 
+                                                cuPagos.REFERENCIAORI, 
+                                                cuPagos.TIPOINGRESO,
+                                                cuPagos.NO_TRANSFERENTE, 
+                                                0, 
+                                                0, 
+                                                n_MONTO_DIF, 
+                                                'D', 
+                                                cuPagos.ID_EVENTO,
+                                                cuPagos.FECHA_PROCESO,
+                                                cuPagos.MONTO_CHATARRA,
+                                                cError
+                                          );
+                                          n_SALDO_GARANT = 0;
                                     }
                                  
                               }
 
+                              if(pIndFinal == 2){
+                                    if(pCveejec == 3){
+                                          await this.eatEventRepository
+                                          .query(`
+                                                UPDATE COMER_LOTES
+                                                SET ID_ESTATUSVTA = 'DES'
+                                                WHERE ID_LOTE = ${n_TLOTE};
+                                          `);
+                                    }else{
+                                          await this.eatEventRepository
+                                          .query(`
+                                                UPDATE COMER_LOTES
+                                                SET ID_ESTATUSVTA = 'CAN'
+                                                WHERE ID_LOTE = ${n_TLOTE};
+                                          `);
+                                    }
 
+                                    await this.eatEventRepository
+                                    .query(`
+                                          UPDATE COMER_BIENESXLOTE
+                                                SET ESTATUS_ANT = ESTATUS_COMER,
+                                                ESTATUS_COMER = 'CPV'
+                                          WHERE ID_LOTE = ${n_TLOTE};
+                                    `);
+                                    await this.eatEventRepository
+                                    .query(`
+                                          UPDATE BIENES
+                                                SET ESTATUS = 'CPV'
+                                          WHERE NO_BIEN IN (SELECT NO_BIEN
+                                                                  FROM COMER_BIENESXLOTE
+                                                            WHERE ID_LOTE = ${n_TLOTE});
+                                    `);
+                                    if(pCveejec != 3){
+                                          try{
+                                                let resComerLotes = await this.eatEventRepository
+                                                .query(`
+                                                      SELECT ID_CLIENTE, LOTE_PUBLICO
+                                                      FROM COMER_LOTES
+                                                      WHERE ID_LOTE = ${n_TLOTE};
+                                                `);
+
+
+                                          /*PK_COMER_PENALIZACIONES.PA_REGISTRA_PENALIZACION (n_ID_CLIENTE,
+                                                                                            n_ID_EVENTO,
+                                                                                            n_LOTE_PUBLICO,
+                                                                                            TRUNC(f_FEC_FALLO)+5,
+                                                                                            6,
+                                                                                            'AUTOMÁTICO POR DISPERSION',
+                                                                                            USER,
+                                                                                            p_MSG_PROCESO,
+                                                                                            p_EST_PROCESO);*/
+                                          }catch(error){
+                                             cError = p_MSG_PROCESO||', '||error;
+                                             console.log(cError)
+                                             //RAISE e_EXCEPPROC;
+                                          }
+
+                                    }
+                              }
                         }
-
-//                        let tabS = ArrSaldolote.find( res => res.tabLotes ===  n_TLOTE.tabLotes);
-
-
-
-                        
-
                   }
-
-
             }
+            if ([1, 3].includes(pCveejec)) {
+                  if(pIndFinal == 2){
+                        await this.eatEventRepository
+                        .query(`
+                              UPDATE SERA.COMER_CLIENTESXEVENTO
+                                    SET PROCESADO = 'S',
+                                    ENVIAR_SIRSAE = 'S',
+                                    ENVIADO_SIRSAE = 'N'
+                              WHERE ID_EVENTO = ${pIdevento}
+                                    AND COALESCE(PROCESADO,'N') = 'N'
+                                    AND COALESCE(PROCESAR,'N') = 'S';
+                        `);
+                        //PREP_OI (n_ID_EVENTO, c_CVE_PROCESO);
 
-
-
-
-
+                        await this.eatEventRepository
+                        .query(`
+                              UPDATE SERA.COMER_CLIENTESXEVENTO
+                                    SET PROCESAR = 'N',
+                                    FECHA_EJECUCION = now()
+                              WHERE ID_EVENTO = ${pIdevento}
+                                    AND COALESCE(PROCESADO,'N') = 'S'
+                                    AND COALESCE(PROCESAR,'N') = 'S'
+                                    AND COALESCE(ENVIAR_SIRSAE,'N') = 'S'
+                                    AND COALESCE(ENVIADO_SIRSAE,'N') = 'N';
+                        `);
+                  }else{
+                        await this.eatEventRepository
+                        .query(`
+                              UPDATE SERA.COMER_CLIENTESXEVENTO
+                                    SET PROCESAR = 'N',
+                                    ENVIAR_SIRSAE = 'N',
+                                    FECHA_EJECUCION = now()
+                              WHERE ID_EVENTO = ${pIdevento}
+                                    AND COALESCE(PROCESADO,'N') = 'N'
+                                    AND COALESCE(PROCESAR,'N') = 'S';
+                        `);
+                  }
+            }else{
+                  if(pIndFinal == 2){
+                        //PREP_OI (n_ID_EVENTO, c_CVE_PROCESO);
+                        console.log("--PREP_OI--");
+                  }
+            }
+            console.log("--Fin--");
+            return {
+                  statusCode: HttpStatus.OK,
+                  message: 'OK'
+            };
       }
 
 }

@@ -56,6 +56,14 @@ import { CatStoreEntity } from '../infrastructure/cat-store.entity';
           port: 3012,
         },
       },
+      {
+        name: 'ms-sb-0001-realstate',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 3000,
+        },
+      },
     ]),
     TypeOrmModule.forFeature([
       EatEventEntity,
